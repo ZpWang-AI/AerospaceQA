@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 
 from pathlib import Path as path
 # from selenium import webdriver
@@ -20,29 +21,49 @@ start_urls = [
 
 
 class Crawler:
-    def __init__(self, edge_loc, edgedriver_loc, saved_fold) -> None:
+    def __init__(
+        self, 
+        edge_loc, 
+        edgedriver_loc, 
+        saved_fold, 
+        search_page_per_second=5,
+    ) -> None:
         options = EdgeOptions()
         options.use_chromium = True
         options.binary_location = edge_loc
         self.driver = Edge(options=options, executable_path=edgedriver_loc)
-        self.driver.get('www.baidu.com')  # For test
+        self.driver.get('https://www.baidu.com/')  # For test
+        print('\ndriver works!\n')
         
         self.saved_fold = path(saved_fold)
         self.saved_fold.mkdir(parents=True, exist_ok=True)
         
         self.searched_urls = set()
         
-    def search_webpage(self, webpage):
+        self.search_gap = 1/search_page_per_second
+        self.last_search_time = 0
+    
+    def search_urls(self, urls):
+        print('\nstart searching\n')
+        for url in urls:
+            self._search_webpage(url)
+        self.driver.quit()
+        print('\nfinish searching\n')
+        
+    def _search_webpage(self, webpage):
         if webpage in self.searched_urls:
             return
         self.searched_urls.add(webpage)
+        
+        time.sleep(max(0, self.last_search_time+self.search_gap-time.time()))
+        self.last_search_time = time.time()
 
         self.driver.get(webpage)
-        elements = self.driver.find_elements(By.XPATH, '//meta')
+        elements = self.driver.find_elements(By.XPATH, '//div')
 
-        nxt_urls = self._deal_elements(elements)
-        for url in nxt_urls:
-            self.search_webpage(url)
+        for ele in elements:
+            if ele.get_attribute('class') == 'param':
+                print(ele.text)
     
     def _deal_elements(self, elements):
         # TODO
@@ -56,11 +77,11 @@ def main():
         edge_loc=EDGE_LOCATION,
         edgedriver_loc=EDGEDRIVER_LOCATION,
         saved_fold=SAVED_FOLD,
+        search_page_per_second=5
     )
     
-    for url in start_urls:
-        crawler.search_webpage(url)
+    crawler.search_urls(start_urls)
     
-
+    
 if __name__ == '__main__':
     main()
