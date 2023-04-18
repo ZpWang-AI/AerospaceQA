@@ -1,9 +1,4 @@
-data/*
-!data/ghc_test.tsv
-!data/ghc_train.tsv
-
-
-saved_res/*/*
+saved
 
 
 logs
