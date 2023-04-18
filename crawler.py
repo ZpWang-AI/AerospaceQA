@@ -14,7 +14,8 @@ EDGEDRIVER_LOCATION = r"D:\msedgedriver.exe"
 SAVED_FOLD = r"./saved"
 
 start_urls = [
-    r''
+    r'https://baike.baidu.com/item/%E8%88%AA%E7%A9%BA%E8%88%AA%E5%A4%A9?fromModule=lemma_search-box',
+    
 ]
 
 
@@ -39,12 +40,14 @@ class Crawler:
         self.driver.get(webpage)
         elements = self.driver.find_elements(By.XPATH, '//meta')
 
-        nxt_urls = self.deal_elements(elements)
+        nxt_urls = self._deal_elements(elements)
         for url in nxt_urls:
             self.search_webpage(url)
     
-    def deal_elements(self, elements):
+    def _deal_elements(self, elements):
         # TODO
+        # for element in elements:
+        #     if element.name == ''
         pass
 
     
