@@ -1,3 +1,4 @@
+lxml==4.9.2
 msedge_selenium_tools==3.141.4
 Requests==2.28.2
 selenium==4.8.3
