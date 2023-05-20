@@ -12,6 +12,9 @@ test*
 *.zip
 nohup.out
 
+data_spider
+v1_*
+
 _*.py
 _*.out
 __pycache__
