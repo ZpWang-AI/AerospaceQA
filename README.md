@@ -1,5 +1,7 @@
 # AerospaceQA
 
+[CN](./README_cn.md)
+
 The QA system which is based on LLM and about aerospace .
 
 ### Related Documents
