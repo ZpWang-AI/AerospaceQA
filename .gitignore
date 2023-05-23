@@ -12,8 +12,10 @@ test*
 *.zip
 nohup.out
 
-data_spider
+data_spider_*
 v1_*
+workspace
+dataspace
 
 _*.py
 _*.out
