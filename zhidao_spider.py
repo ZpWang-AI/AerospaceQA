@@ -1,16 +1,18 @@
 # utf-8
-from baiduspider import BaiduSpider
 import requests
-from lxml import etree
 import re
 import string
 import random
 import time
 import os
-from tqdm import tqdm
 import json
-from collections import OrderedDict
 import zhidao_norm as zhidao_norm
+import traceback
+
+from lxml import etree
+from baiduspider import BaiduSpider
+from tqdm import tqdm
+from collections import OrderedDict
 
 spider = BaiduSpider()
 page_size = 3
@@ -23,8 +25,9 @@ all_info_file = 'dataspace/zhidao.all_crawled_info.jsonl'
 
 
 class Zhidao_spider:
-    def __init__(self, page_size=3):
+    def __init__(self, page_size=3, sleep_time=[1,2,3]):
         self.page_size = page_size
+        self.sleep_time = sleep_time
 
         self.normalizer = zhidao_norm.normalizer() 
 
@@ -52,7 +55,16 @@ class Zhidao_spider:
         urls = set()
         print("{} Crawl URLS...".format(key))
         for page in range(1, self.page_size+1):
-            reslst = spider.search_zhidao(key+' 百度知道', pn=page).plain
+            try:
+                reslst = spider.search_zhidao(key+' 百度知道', pn=page).plain
+            except:
+                print('-'*20)
+                print(key)
+                print('-'*20)
+                print(traceback.format_exc())
+                print('-'*20)
+                continue
+            
             if not len(reslst): continue
             for result in reslst:
                 url = result['url']
@@ -63,17 +75,17 @@ class Zhidao_spider:
 
 
     def crawl_answers(self, url):
-            response = requests.get(url, headers=headers)
-            # response.encoding = 'gb1213'
-            html = etree.HTML(response.text)
-            title = html.xpath('//*[@id="wgt-ask"]/h1/span//text()')
-            best_answer = html.xpath('//div[@class="best-text mb-10 dd"]//text()')
-            if not best_answer: best_answer = html.xpath('//div[@class="best-text mb-10"]//text()')
-            other_answers = html.xpath('//div[@class="answer-text mb-10"]//text()') 
-            if not other_answers: other_answers = html.xpath('//div[@class="answer-text mb-10 line"]//text()')
-            links = html.xpath('//*[@id="wgt-related"]/div[1]/ul//a/@href')
+        response = requests.get(url, headers=headers)
+        # response.encoding = 'gb1213'
+        html = etree.HTML(response.text)
+        title = html.xpath('//*[@id="wgt-ask"]/h1/span//text()')
+        best_answer = html.xpath('//div[@class="best-text mb-10 dd"]//text()')
+        if not best_answer: best_answer = html.xpath('//div[@class="best-text mb-10"]//text()')
+        other_answers = html.xpath('//div[@class="answer-text mb-10"]//text()') 
+        if not other_answers: other_answers = html.xpath('//div[@class="answer-text mb-10 line"]//text()')
+        links = html.xpath('//*[@id="wgt-related"]/div[1]/ul//a/@href')
 
-            return title, best_answer, other_answers, links
+        return title, best_answer, other_answers, links
     
     def crawl_from_list(self, keyword_list):
         total_data = self.crawl_all(keyword_list=keyword_list)
@@ -140,7 +152,7 @@ class Zhidao_spider:
                     for key in tqdm(self.NotFoundSet):
                         f.write(key+ '\n')
 
-            time.sleep(random.randint(1, 3))
+            time.sleep(random.choice(self.sleep_time))
 
         return new_contents
             

@@ -28,7 +28,7 @@ def main(round_num, sleep_time, crawl_baike=True, crawl_zhidao=True):
     
     # load crawled_keywords
     baike_spider = Baike_spider()
-    zhidao_spider = Zhidao_spider()
+    zhidao_spider = Zhidao_spider(page_size=2)
     keyword_queryer = KeywordQueryer()
     
     for r in range(1, round_num+1):
@@ -68,4 +68,5 @@ if __name__ == "__main__":
     # print(get_new_keywords(['你看这个航天飞机，他又大又硬']))
     round_num = 4
     sleep_time = 3
-    main(round_num, sleep_time, crawl_baike=True, crawl_zhidao=False)
+    # main(round_num, sleep_time, crawl_baike=True, crawl_zhidao=False)
+    main(round_num, sleep_time, crawl_baike=False, crawl_zhidao=True)
