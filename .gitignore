@@ -19,5 +19,6 @@ dataspace
 
 _*.py
 _*.out
+*.log
 __pycache__
 .vscode

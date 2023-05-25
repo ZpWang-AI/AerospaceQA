@@ -9,18 +9,17 @@ import json
 import zhidao_norm as zhidao_norm
 import traceback
 
-from lxml import etree
-from baiduspider import BaiduSpider
 from tqdm import tqdm
+from lxml import etree
 from collections import OrderedDict
+from baiduspider import BaiduSpider
 
 spider = BaiduSpider()
 page_size = 3
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
+headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
 
 not_found_word_file = 'dataspace/zhidao.Not_found_keyword_list.txt'
-crawled_file = 'dataspace/zhidao.crawled_keyword.jsonl'
+crawled_file = 'dataspace/zhidao.crawled_keyword.json'
 all_info_file = 'dataspace/zhidao.all_crawled_info.jsonl'
 
 

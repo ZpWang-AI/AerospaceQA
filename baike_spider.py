@@ -4,6 +4,7 @@
 @Time        :   2023/04/26 18:50:39
 """
 
+import re
 import requests
 from bs4 import BeautifulSoup
 import random
@@ -132,6 +133,9 @@ def found_and_record(keyword, url, soup, Crawled_keyword_set, Crawled_url_set):
     if title in Crawled_keyword_set:
         return
     main_content = soup.find('div', class_='main-content').get_text().replace(' ', '').replace('\n', '').replace('\xa0', '')
+    main_content = re.sub(r'收藏查看我的收藏\d*有用\+\d*已投票\d*', '', main_content)
+    main_content = re.sub(r'\[\d*\]', '', main_content)
+    
     links = []
     filter_list = ['秒懂本尊答', '秒懂大师说', '秒懂看瓦特', '秒懂五千年', '秒懂全视界', '百科热词团队']
     for link in soup.find_all('a'):
