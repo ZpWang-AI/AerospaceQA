@@ -11,6 +11,7 @@ test*
 *.sh
 *.zip
 nohup.out
+openai_apikey.py
 
 data_spider_*
 v1_*

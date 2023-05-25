@@ -12,11 +12,7 @@ from tqdm import tqdm
 from collections import OrderedDict
 
 from data_utils import load_data_txt
-
-# openai.api_key = "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"
-openai.api_key = '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'
-# openai.proxy = "http://127.0.0.1:1087"
-# openai.proxy = '7890'
+from openai_apikey import *
 
 
 DATA_FOLD = path('./dataspace/')
