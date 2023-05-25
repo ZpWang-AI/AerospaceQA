@@ -44,6 +44,7 @@ def main_query_new_keywords():
             piece = json.loads(line)
             zhidao_passage.append(piece['content'])
     keyword_queryer.get_new_keywords(zhidao_passage)    
+    KeywordManager.get_new_keywords()
 
     
 if __name__ == "__main__":

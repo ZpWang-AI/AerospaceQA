@@ -12,7 +12,9 @@ from tqdm import tqdm
 from collections import OrderedDict
 
 from data_utils import load_data_txt
-from openai_apikey import *
+from openai_apikey import api_key
+
+openai.api_key = api_key
 
 
 DATA_FOLD = path('./dataspace/')
@@ -164,10 +166,14 @@ class KeywordManager:
 
 
 if __name__ == '__main__':
-    sentence = '''看我的收藏0有用+1已投票0轨道器播报编辑锁定讨论上传视频特型编辑太空拖船轨道器是指往来于航天站与空间基地之间的载人或无人飞船。它的主要用途是更换、修理航天站上的仪器设备。补给消耗品，从航天站取回资料和空间加工的产品等。由于它专门来往于各个空间站，又被称为“太空拖船”。中文名轨道器别名太空拖船往返航天站与空间基地用途更换、修理航天站上的仪器设备相关视频查看全部轨道飞行器分为两种。一种是活动范围较小的，叫做轨道机动飞行器；另一种是在大范围内实行轨道转移的，成为轨道转移飞行器。可以搭载七名宇航员在太空至少逗留10天。机舱内有三层甲板：飞行甲板、中甲板和设有生命支持系统的底层甲板。轨道飞行器长37.24米，高17.27米，翼展29.79米，载荷舱尺寸18.3*4.6米，轨道速度每小时28800公里，可容忍温度1500摄氏度，轨道高度185公里至1000公里，持续时间10至16天。词条图册更多图册'''
-    a = KeywordQueryer()
-    print(a.get_new_keywords([sentence]))
-    
+    for i in range(5):
+        try:
+            sentence = '''看我的收藏0有用+1已投票0轨道器播报编辑锁定讨论上传视频特型编辑太空拖船轨道器是指往来于航天站与空间基地之间的载人或无人飞船。它的主要用途是更换、修理航天站上的仪器设备。补给消耗品，从航天站取回资料和空间加工的产品等。由于它专门来往于各个空间站，又被称为“太空拖船”。中文名轨道器别名太空拖船往返航天站与空间基地用途更换、修理航天站上的仪器设备相关视频查看全部轨道飞行器分为两种。一种是活动范围较小的，叫做轨道机动飞行器；另一种是在大范围内实行轨道转移的，成为轨道转移飞行器。可以搭载七名宇航员在太空至少逗留10天。机舱内有三层甲板：飞行甲板、中甲板和设有生命支持系统的底层甲板。轨道飞行器长37.24米，高17.27米，翼展29.79米，载荷舱尺寸18.3*4.6米，轨道速度每小时28800公里，可容忍温度1500摄氏度，轨道高度185公里至1000公里，持续时间10至16天。词条图册更多图册'''
+            a = KeywordQueryer()
+            print(a.get_new_keywords([sentence]))
+            break
+        except:
+            pass
     # KeywordManager.keyword_excel2txt()
     # print(KeywordManager.get_all_keywords())
     # KeywordManager.get_new_keywords()
