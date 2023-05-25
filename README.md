@@ -36,7 +36,5 @@
 新建文件 openai_apikey.py 并写入 
 
 ~~~
-
-api_key = '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'
-
-将 openai.api_key='###' 写在  文件中
+api_key = '###############'
+~~~
