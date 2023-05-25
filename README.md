@@ -13,6 +13,7 @@
 ```
 | utils.py
 | data_utils.py
+| Trie.py
 | baike_spider.py
 | zhidao_norm.py
 | zhidao_spider.py
@@ -33,8 +34,8 @@
 
 ### 注意事项
 
-新建文件 openai_apikey.py 并写入 
+新建文件 openai_apikey.py 并写入
 
-~~~
+```
 api_key = '###############'
-~~~
+```
