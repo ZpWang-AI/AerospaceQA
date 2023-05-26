@@ -28,33 +28,51 @@ class KeywordQueryer:
                  engine='gpt-3.5-turbo',
                  max_query_len=1000, 
                  max_ans_token=2048, 
+                 retry_time=3,
+                 save_keyword=True,
                  ) -> None:
         self._prompt = prompt
         self._engine = engine
         self._max_query_len = max_query_len
         self._max_ans_token = max_ans_token
+        self._retry_time = retry_time
+        self._save_keyword = save_keyword
     
     def _get_response(self, content):
         message_list = [
             {'role': 'user', 'content': f'{self._prompt}\n 文章：{content}'},
         ]
 
-        response = openai.ChatCompletion.create(
-            model=self._engine,
-            messages = message_list,
-            max_tokens= self._max_ans_token,
-            temperature=0,
-            top_p=1,
-            n=1,
-            # # stop=stop if stop else None,
-            presence_penalty=0,
-            frequency_penalty=0,
-        )
-        output_keyword = response['choices'][0]['message']['content']
-        output_keyword = output_keyword.split('\n')
-        output_keyword = filter(lambda x:len(x)>2 and x[0]=='-', output_keyword)
-        output_keyword = map(lambda x:x[1:].strip(), output_keyword)
-        return list(output_keyword)
+        for p in range(1, self._retry_time+1):
+            try:
+                response = openai.ChatCompletion.create(
+                    model=self._engine,
+                    messages = message_list,
+                    max_tokens= self._max_ans_token,
+                    temperature=0,
+                    top_p=1,
+                    n=1,
+                    # # stop=stop if stop else None,
+                    presence_penalty=0,
+                    frequency_penalty=0,
+                )
+                output_keyword = response['choices'][0]['message']['content']
+                output_keyword = output_keyword.split('\n')
+                output_keyword = filter(lambda x:len(x)>2 and x[0]=='-', output_keyword)
+                output_keyword = map(lambda x:x[1:].strip(), output_keyword)
+                return list(output_keyword)
+            except:
+                if p == 1:
+                    print('\n'+'-'*10)
+                    print(content)
+                print('-'*10)
+                print(f'>> retry {p} <<')
+                print(traceback.format_exc())
+                print('-'*10)
+                if p != self._retry_time:
+                    time.sleep(20)
+                else:
+                    return []
 
     def _clip_content(self, content):
         sentences = []
@@ -93,19 +111,13 @@ class KeywordQueryer:
                 if con[:100] in record:
                     cur_keywords = record[con[:100]]
                 else:
-                    try:
-                        cur_keywords = self._get_response(con)
+                    cur_keywords = self._get_response(con)
+                    if cur_keywords:
                         record[con[:100]] = cur_keywords
-                    except:
-                        print('-'*20)
-                        print(con)
-                        print('-'*20)
-                        print(traceback.format_exc())
-                        print('-'*20)
-                        cur_keywords = []
                 new_keywords.extend(cur_keywords)
-        with open(RECORD_FILE_KEYWORD, 'w', encoding='utf-8')as f:
-            json.dump(record, f, ensure_ascii=False, indent=4)
+                if self._save_keyword:
+                    with open(RECORD_FILE_KEYWORD, 'w', encoding='utf-8')as f:
+                        json.dump(record, f, ensure_ascii=False, indent=4)
         return list(set(new_keywords))
 
 

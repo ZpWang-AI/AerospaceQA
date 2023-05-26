@@ -26,19 +26,23 @@ def main_zhidao():
     
 
 def main_query_new_keywords():
+    # keyword_queryer = KeywordQueryer(max_query_len=200, save_keyword=False)
     keyword_queryer = KeywordQueryer()
+    
     baike_passage = []
     with open('./dataspace/baike.all_crawled_info.jsonl', 'r', encoding='utf-8')as f:
         for line in f.readlines():
             piece = json.loads(line)
             baike_passage.append(piece['content'])
     keyword_queryer.get_new_keywords(baike_passage)
+    
     zhidao_passage = []
     with open('./dataspace/zhidao.all_crawled_info.jsonl', 'r', encoding='utf-8')as f:
         for line in f.readlines():
             piece = json.loads(line)
             zhidao_passage.append(piece['content'])
     keyword_queryer.get_new_keywords(zhidao_passage)    
+    
     KeywordManager.get_new_keywords()
 
     
