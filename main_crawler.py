@@ -22,12 +22,7 @@ def main_baike():
 def main_zhidao():
     todo_keywords = KeywordManager.get_all_keywords()
     zhidao_spider = Zhidao_spider(page_size=2, sleep_time=[1,2,3])
-    keyword_queryer = KeywordQueryer()
-    zhidao_new_data = zhidao_spider.crawl_from_list(todo_keywords)
-    new_zhidao_passage1 = [item['content1'] for item in zhidao_new_data if item]
-    new_zhidao_passage2 = [item['content2'] for item in zhidao_new_data if item]
-    keyword_queryer.get_new_keywords(new_zhidao_passage1)
-    keyword_queryer.get_new_keywords(new_zhidao_passage2)
+    zhidao_spider.crawl_from_list(todo_keywords)
     
 
 def main_query_new_keywords():

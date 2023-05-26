@@ -23,6 +23,20 @@ crawled_file = 'dataspace/zhidao.crawled_keyword.json'
 all_info_file = 'dataspace/zhidao.all_crawled_info.jsonl'
 
 
+def decorator_crawl_answer(func):
+    def new_func(*args, **kwargs):
+        try:
+            res = func(*args, **kwargs)
+            return res
+        except BaseException as err:
+            print('-'*10)
+            print(err)
+            print('-'*10)
+            print(traceback.format_exc())
+            return ([]for _ in range(4))
+    return new_func
+
+
 class Zhidao_spider:
     def __init__(self, page_size=3, sleep_time=[1,2,3]):
         self.page_size = page_size
@@ -73,8 +87,12 @@ class Zhidao_spider:
         return urls
 
 
+    @decorator_crawl_answer
     def crawl_answers(self, url):
         response = requests.get(url, headers=headers)
+        if response is None:
+            return ([]for _ in range(4))
+            
         # response.encoding = 'gb1213'
         html = etree.HTML(response.text)
         title = html.xpath('//*[@id="wgt-ask"]/h1/span//text()')
