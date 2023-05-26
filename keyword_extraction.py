@@ -67,8 +67,8 @@ class KeywordQueryer:
                     print('\n'+'-'*10)
                     print(content)
                 print('-'*10)
-                print(f'>> retry {p} <<')
                 print(traceback.format_exc())
+                print(f'>> retry {p} <<')
                 openai.proxy = get_proxy(return_str=True)
                 print('-'*10)
                 if p != self._retry_time:
@@ -86,6 +86,7 @@ class KeywordQueryer:
                 cur_sentence = ''
         if cur_sentence:
             sentences.append(cur_sentence)
+            
         cur_content = ''
         for sen in sentences:
             if len(cur_content+sen) > self._max_query_len:
@@ -95,32 +96,30 @@ class KeywordQueryer:
                 cur_content += sen
         yield cur_content
     
-    def get_new_keywords(self, contents):
+    def get_new_keywords(self, keys, contents):
         if RECORD_FILE_KEYWORD.exists():
             with open(RECORD_FILE_KEYWORD, 'r', encoding='utf-8')as f:
                 record = json.load(f)
         else:
             record = {}
             
-        new_keywords = []
-        print('openai processing\n')
-        for content in tqdm(contents):
+        print('\n=== openai processing ===\n')
+        for key, content in tqdm(list(zip(keys, contents))):
             content = content.strip()
             if not content:
                 continue
+            if key in record:
+                continue
             
-            for con in self._clip_content(content):
-                if con[:100] in record:
-                    cur_keywords = record[con[:100]]
-                else:
-                    cur_keywords = self._get_response(con)
-                    if cur_keywords:
-                        record[con[:100]] = cur_keywords
+            new_keywords = []
+            for cliped_content in self._clip_content(content):
+                cur_keywords = self._get_response(cliped_content)
                 new_keywords.extend(cur_keywords)
-                if self._save_keyword:
-                    with open(RECORD_FILE_KEYWORD, 'w', encoding='utf-8')as f:
-                        json.dump(record, f, ensure_ascii=False, indent=4)
-        return list(set(new_keywords))
+            
+            record[key] = new_keywords
+            if self._save_keyword:
+                with open(RECORD_FILE_KEYWORD, 'w', encoding='utf-8')as f:
+                    json.dump(record, f, ensure_ascii=False, indent=4)
 
 
 class KeywordManager:

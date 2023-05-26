@@ -29,21 +29,25 @@ def main_query_new_keywords():
     # keyword_queryer = KeywordQueryer(max_query_len=200, save_keyword=False)
     keyword_queryer = KeywordQueryer()
     
+    baike_urls = []
     baike_passage = []
     with open('./dataspace/baike.all_crawled_info.jsonl', 'r', encoding='utf-8')as f:
         for line in f.readlines():
             piece = json.loads(line)
+            baike_urls.append(piece['url'])
             baike_passage.append(piece['content'])
-    keyword_queryer.get_new_keywords(baike_passage)
+    keyword_queryer.get_new_keywords(keys=baike_urls, contents=baike_passage)
     
+    zhidao_urls = []
     zhidao_passage = []
     with open('./dataspace/zhidao.all_crawled_info.jsonl', 'r', encoding='utf-8')as f:
         for line in f.readlines():
             piece = json.loads(line)
-            zhidao_passage.append(piece['content'])
-    keyword_queryer.get_new_keywords(zhidao_passage)    
-    
-    KeywordManager.get_new_keywords()
+            zhidao_urls.append(piece['url']+'@@1')
+            zhidao_passage.append(piece['content1'])
+            zhidao_urls.append(piece['url']+'@@2')
+            zhidao_passage.append(piece['content2'])
+    keyword_queryer.get_new_keywords(keys=zhidao_urls, contents=zhidao_passage)    
 
     
 if __name__ == "__main__":
@@ -51,3 +55,6 @@ if __name__ == "__main__":
         # main_baike()    
         # main_zhidao()
         main_query_new_keywords()
+    
+        # KeywordManager.get_new_keywords()
+        
