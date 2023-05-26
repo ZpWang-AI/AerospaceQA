@@ -6,13 +6,16 @@
 
 import re
 import requests
-from bs4 import BeautifulSoup
 import random
 import time
 import json
-from tqdm import tqdm
 import sys
 import os
+
+from bs4 import BeautifulSoup
+from tqdm import tqdm
+
+from proxy_utils import get_proxy
 
 
 url_prefix = " https://baike.baidu.com/item/"
@@ -90,7 +93,7 @@ def crawl_content(url_list, Crawled_keyword_set, Crawled_url_set, Not_found_set)
             continue
         # print(url+"")
         # print(headers)
-        response = requests.get(url+"", headers=headers)
+        response = requests.get(url+"", headers=headers, proxies=get_proxy(return_str=False))
         soup = BeautifulSoup(response.text, 'html.parser')
         content = soup.find('div', class_='main-content')
         # if keyword doest exist
