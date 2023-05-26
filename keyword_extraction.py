@@ -13,7 +13,7 @@ from collections import OrderedDict
 
 from data_utils import load_data_txt
 from openai_apikey import api_key
-from proxy_utils import get_proxy
+# from proxy_utils import get_proxy
 
 openai.api_key = api_key
 
@@ -69,7 +69,7 @@ class KeywordQueryer:
                 print('-'*10)
                 print(traceback.format_exc())
                 print(f'>> retry {p} <<')
-                openai.proxy = get_proxy(return_str=True)
+                # openai.proxy = get_proxy(return_str=True)
                 print('-'*10)
                 if p != self._retry_time:
                     time.sleep(20)
