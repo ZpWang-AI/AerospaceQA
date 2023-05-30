@@ -90,5 +90,11 @@ def get_response_chatcompletion(
 
 
 if __name__ == '__main__':
-    s = 'Hello, I\'m glad to see you.'
-    print(get_response_chatcompletion(content=s, max_tokens=2))
+    content = 'Hello, I\'m glad to see you.'
+    messages = [
+        { "role": "system", "content": 'you are my friend'},
+        { "role": "user", "content": content},
+        { "role": "assistant", "content": "I'm glad to see you, too."}
+    ]
+    print(get_response_chatcompletion(content=content, max_tokens=2))
+    print(get_response_chatcompletion(messages=messages))
