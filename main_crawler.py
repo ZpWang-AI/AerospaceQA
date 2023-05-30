@@ -7,7 +7,7 @@ from pathlib import Path as path
 from baike_spider import Baike_spider
 from zhidao_spider import Zhidao_spider
 from data_utils import load_data, dump_data, load_data_txt
-from keyword_extraction import KeywordQueryer, KeywordManager
+from keyword_extraction import KeywordQueryer, KeywordManager, KeywordFilter
 
 
 DATASPACE_PATH = './dataspace/'
@@ -49,12 +49,17 @@ def main_query_new_keywords():
             zhidao_passage.append(piece['content2'])
     keyword_queryer.get_new_keywords(keys=zhidao_urls, contents=zhidao_passage)    
 
+
+def main_filter_new_keywords():
+    filter_ = KeywordFilter()
+    filter_.filter_keywords()
     
 if __name__ == "__main__":
     for i in range(1):
         # main_baike()    
         # main_zhidao()
-        main_query_new_keywords()
+        # main_query_new_keywords()
+        # main_filter_new_keywords()
     
-        # KeywordManager.get_new_keywords()
+        KeywordManager.get_new_filter_keywords()
         
