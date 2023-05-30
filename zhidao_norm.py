@@ -15,6 +15,8 @@ class normalizer:
         self.error_word_map =  {'唿': '呼'}
         self.remove_regx_map = collections.OrderedDict({
         r'\s+': ' ',
+        # r'文章摘自：': '',
+        r'相关视频查看全部目录': '',
         r'<(\d+)>': '\g<1>',
         r'\^[A-Z]': '',  # '^G', '^H', '^E'去除
         r'步骤阅读': '',  # 注意需要针对具体的 case，分析模型预测的答案和实际的答案的差别来进行相应字段的清洗

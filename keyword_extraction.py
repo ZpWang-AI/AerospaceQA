@@ -126,51 +126,30 @@ class KeywordFilter:
         message_list = [
             {'role': 'user', 'content': f'{self._prompt}\n 词语：\n{content}'},
         ]
-
-        for p in range(1, self._retry_time+1):
-            try:
-                response = openai.ChatCompletion.create(
-                    model=self._engine,
-                    messages = message_list,
-                    max_tokens= self._max_ans_token,
-                    temperature=0,
-                    top_p=1,
-                    n=1,
-                    # # stop=stop if stop else None,
-                    presence_penalty=0,
-                    frequency_penalty=0,
-                )
-                output_filter = response['choices'][0]['message']['content']
-                print(output_filter)
-                output_filter = output_filter.split('\n')
-                output_res = {}
-                for line in output_filter:
-                    if not line:
-                        continue
-                    if line[0] == '是':
-                        output_yes = line.split()[1:]
-                        for w in output_yes:
-                            if w:
-                                output_res[w] = True
-                    if line[0] == '否':
-                        output_no = line.split()[1:]
-                        for w in output_no:
-                            if w:
-                                output_res[w] = False
-                return output_res
-            except:
-                if p == 1:
-                    print('\n'+'-'*10)
-                    print(content)
-                print('-'*10)
-                print(traceback.format_exc())
-                print(f'>> retry {p} <<')
-                # openai.proxy = get_proxy(return_str=True)
-                print('-'*10)
-                if p != self._retry_time:
-                    time.sleep(20)
-                else:
-                    return {}
+        
+        output_filter = get_response_chatcompletion(
+            messages=message_list,
+            engine=self._engine,
+            max_tokens=self._max_ans_token,
+            retry_time=self._retry_time,
+        )
+        output_filter = output_filter.split('\n')
+        output_res = {}
+        for line in output_filter:
+            line = line.strip()
+            if not line:
+                continue
+            if line[0] == '是':
+                output_yes = line.split()[1:]
+                for w in output_yes:
+                    if w:
+                        output_res[w] = True
+            if line[0] == '否':
+                output_no = line.split()[1:]
+                for w in output_no:
+                    if w:
+                        output_res[w] = False
+        return output_res
 
     def filter_keywords(self):
         if RECORD_FILE_KEYWORD.exists():
@@ -233,7 +212,7 @@ class KeywordManager:
             if file.suffix != '.txt':
                 continue
             all_keywords.extend(load_data_txt(file))
-        return list(OrderedDict.fromkeys(all_keywords))
+        return sorted(set(all_keywords))
             
     @staticmethod
     def get_new_keywords():
@@ -286,20 +265,18 @@ class KeywordManager:
 
 
 if __name__ == '__main__':
-    # for i in range(5):
-    #     try:
-    #         sentence = '''看我的收藏0有用+1已投票0轨道器播报编辑锁定讨论上传视频特型编辑太空拖船轨道器是指往来于航天站与空间基地之间的载人或无人飞船。它的主要用途是更换、修理航天站上的仪器设备。补给消耗品，从航天站取回资料和空间加工的产品等。由于它专门来往于各个空间站，又被称为“太空拖船”。中文名轨道器别名太空拖船往返航天站与空间基地用途更换、修理航天站上的仪器设备相关视频查看全部轨道飞行器分为两种。一种是活动范围较小的，叫做轨道机动飞行器；另一种是在大范围内实行轨道转移的，成为轨道转移飞行器。可以搭载七名宇航员在太空至少逗留10天。机舱内有三层甲板：飞行甲板、中甲板和设有生命支持系统的底层甲板。轨道飞行器长37.24米，高17.27米，翼展29.79米，载荷舱尺寸18.3*4.6米，轨道速度每小时28800公里，可容忍温度1500摄氏度，轨道高度185公里至1000公里，持续时间10至16天。词条图册更多图册'''
-    #         a = KeywordQueryer()
-    #         print(a.get_new_keywords([sentence]))
-    #         break
-    #     except:
-    #         pass
+    sentence = '''看我的收藏0有用+1已投票0轨道器播报编辑锁定讨论上传视频特型编辑太空拖船轨道器是指往来于航天站与空间基地之间的载人或无人飞船。它的主要用途是更换、修理航天站上的仪器设备。补给消耗品，从航天站取回资料和空间加工的产品等。由于它专门来往于各个空间站，又被称为“太空拖船”。中文名轨道器别名太空拖船往返航天站与空间基地用途更换、修理航天站上的仪器设备相关视频查看全部轨道飞行器分为两种。一种是活动范围较小的，叫做轨道机动飞行器；另一种是在大范围内实行轨道转移的，成为轨道转移飞行器。可以搭载七名宇航员在太空至少逗留10天。机舱内有三层甲板：飞行甲板、中甲板和设有生命支持系统的底层甲板。轨道飞行器长37.24米，高17.27米，翼展29.79米，载荷舱尺寸18.3*4.6米，轨道速度每小时28800公里，可容忍温度1500摄氏度，轨道高度185公里至1000公里，持续时间10至16天。词条图册更多图册'''
+    kq = KeywordQueryer(save_keyword=False)
+    print(kq.get_new_keywords(['123'], [sentence]))
+    
+    # kf = KeywordFilter(save_keyword=False)
+    # kf.filter_keywords
     
     # KeywordManager.keyword_excel2txt()
-    # print(KeywordManager.get_all_keywords())
     # KeywordManager.get_new_keywords()
+    # KeywordManager.get_new_filter_keywords()
     
+    # all_keywords = KeywordManager.get_all_keywords()
+    # print(len(all_keywords))
     
-    a = KeywordFilter(save_keyword=False)
-    a.filter_keywords()
     pass
