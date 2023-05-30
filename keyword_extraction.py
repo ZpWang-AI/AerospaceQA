@@ -12,6 +12,7 @@ from tqdm import tqdm
 from collections import OrderedDict
 
 from data_utils import load_data_txt
+from openai_api import get_response_chatcompletion
 from openai_apikey import api_key
 # from proxy_utils import get_proxy
 
@@ -44,38 +45,17 @@ class KeywordQueryer:
         message_list = [
             {'role': 'user', 'content': f'{self._prompt}\n 文章：{content}'},
         ]
-
-        for p in range(1, self._retry_time+1):
-            try:
-                response = openai.ChatCompletion.create(
-                    model=self._engine,
-                    messages = message_list,
-                    max_tokens= self._max_ans_token,
-                    temperature=0,
-                    top_p=1,
-                    n=1,
-                    # # stop=stop if stop else None,
-                    presence_penalty=0,
-                    frequency_penalty=0,
-                )
-                output_keyword = response['choices'][0]['message']['content']
-                output_keyword = output_keyword.split('\n')
-                output_keyword = filter(lambda x:len(x)>2 and x[0]=='-', output_keyword)
-                output_keyword = map(lambda x:x[1:].strip(), output_keyword)
-                return list(output_keyword)
-            except:
-                if p == 1:
-                    print('\n'+'-'*10)
-                    print(content)
-                print('-'*10)
-                print(traceback.format_exc())
-                print(f'>> retry {p} <<')
-                # openai.proxy = get_proxy(return_str=True)
-                print('-'*10)
-                if p != self._retry_time:
-                    time.sleep(20)
-                else:
-                    return []
+        
+        output_keyword = get_response_chatcompletion(
+            messages=message_list,
+            engine=self._engine,
+            max_tokens=self._max_ans_token,
+            retry_time=self._retry_time,
+        )
+        output_keyword = output_keyword.split('\n')
+        output_keyword = filter(lambda x:len(x)>2 and x[0]=='-', output_keyword)
+        output_keyword = map(lambda x:x[1:].strip(), output_keyword)
+        return list(output_keyword)
 
     def _clip_content(self, content):
         sentences = []

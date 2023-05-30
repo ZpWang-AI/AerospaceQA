@@ -1,25 +1,29 @@
-saved
+*.sh
+*.zip
+*.ipynb
+_*.py
+_*.out
+*.log
 
-
+__pycache__
+nohup.out
 logs
-tmp*
+.vscode
+*tmp*
+*test*
+
+# ==============================
+
+v1_*
+
+openai_apikey.py
+self_generate.py
 
 pretrained_model
 saved_model
 flagged
-test*
-*.sh
-*.zip
-nohup.out
-openai_apikey.py
-
-data_spider_*
-v1_*
+data_spider_lh
+data_spider_lzf
+qa_generater_zjdou
 workspace
 dataspace
-
-_*.py
-_*.out
-*.log
-__pycache__
-.vscode
