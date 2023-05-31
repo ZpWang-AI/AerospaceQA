@@ -54,8 +54,6 @@ class BaikeSpider():
 
     def _deal_piece(self, keyword, url, soup):
         title = soup.find('h1').get_text()
-        if title in self._crawled or title in self._not_found:
-            return
         main_content = soup.find('div', class_='main-content').get_text().replace('\n', ' ').replace('\xa0', ' ')
         main_content = re.sub(r'收藏查看我的收藏\d*有用\+\d*已投票\d*', '', main_content)
         main_content = re.sub(r'\[\d*\]', '', main_content)
@@ -148,7 +146,8 @@ def main_baike():
         retry_time=3,
         proxy_url=PROXY_URL,
         sleep_time=2.5,
-        save_res=False,
+        only_abstrct=False,
+        save_res=True,
     )
     baike_spider.crawl_keywords(total_keywords)
    
