@@ -31,7 +31,7 @@ def load_data(file_path):
     elif file_path.suffix == '.jsonl':
         with open(file_path, 'r', encoding='utf-8')as f:
             lines = list(filter(lambda x:x, map(lambda x:x.strip(), f.readlines())))
-            dics = list(map(json.load, lines))
+            dics = list(map(json.loads, lines))
         return dics
     else:
         print(f'== {file_path} has wrong suffix ==')
@@ -41,19 +41,17 @@ def load_data(file_path):
 def dump_data(file_path, content, mode='a+'):
     file_path = path(file_path)
     if not file_path.exists():
-        print(f'== {file_path} not exists ==')
-        return 
+        with open(file_path, 'w', encoding='utf-8')as f:
+            f.write('')
     if file_path.suffix == '.txt':
-        if mode[0] == 'a' and content[-1] != '\n':
-            content += '\n'
         with open(file_path, mode=mode, encoding='utf-8')as f:
-            f.write(content)
+            f.write(content+'\n')
     elif file_path.suffix == '.json':
         with open(file_path, mode=mode, encoding='utf-8')as f:
             json.dump(content, f, ensure_ascii=False)
     elif file_path.suffix == '.jsonl':
         with open(file_path, mode=mode, encoding='utf-8')as f:
-            f.write(json.dumps(content, ensure_ascii=False))
+            f.write(json.dumps(content, ensure_ascii=False)+'\n')
     else:
         print(f'== {file_path} has wrong suffix ==')
         return 
@@ -175,4 +173,4 @@ def dump_data(file_path, content, mode='a+'):
 
 
 if __name__ == '__main__':
-    print(load_data_txt('./dataspace/todo_keywords.txt'))
+    print(load_data('./dataspace/todo_keywords.txt'))

@@ -11,7 +11,7 @@ from pathlib import Path as path
 from tqdm import tqdm
 from collections import OrderedDict
 
-from data_utils import load_data_txt
+from data_utils import load_data
 from openai_api import get_response_chatcompletion
 from openai_apikey import api_key
 # from proxy_utils import get_proxy
@@ -211,7 +211,7 @@ class KeywordManager:
             file = KEYWORD_FOLD/file
             if file.suffix != '.txt':
                 continue
-            all_keywords.extend(load_data_txt(file))
+            all_keywords.extend(load_data(file))
         return sorted(set(all_keywords))
     
     @staticmethod

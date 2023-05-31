@@ -6,7 +6,7 @@ from pathlib import Path as path
 
 from baike_spider import Baike_spider
 from zhidao_spider import Zhidao_spider
-from data_utils import load_data, dump_data, load_data_txt
+from data_utils import load_data, dump_data
 from keyword_extraction import KeywordQueryer, KeywordManager, KeywordFilter
 
 
