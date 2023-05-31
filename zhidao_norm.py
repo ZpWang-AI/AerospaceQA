@@ -4,7 +4,7 @@ import string
 import collections
 import unicodedata
 
-class normalizer:
+class Normalizer:
     def __init__(self) -> None:
         self.spaces = {'\x10', '\x7f', '\x9d', '\xad', '\\x0a', '\\xa0', '\\x0d'
                                                             '\f', '\n', '\r', '\t', '\v', '&#160;', '&nbsp;',

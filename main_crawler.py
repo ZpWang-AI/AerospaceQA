@@ -13,13 +13,6 @@ from keyword_extraction import KeywordQueryer, KeywordManager, KeywordFilter
 DATASPACE_PATH = './dataspace/'
 
 
-def main_baike():
-    all_keywords = KeywordManager.get_all_keywords()
-    
-    baike_spider = Baike_spider()
-    baike_spider.crawl_from_list(todo_keywords)
-
-
 def main_zhidao():
     todo_keywords = KeywordManager.get_all_keywords()
     zhidao_spider = Zhidao_spider(page_size=2, sleep_time=[1,2,3])

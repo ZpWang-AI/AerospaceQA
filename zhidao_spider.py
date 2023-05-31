@@ -14,14 +14,18 @@ from lxml import etree
 from collections import OrderedDict
 from baiduspider import BaiduSpider
 
+from utils import sleep_random_time, get_cur_time
 from proxy_utils import get_proxy
+from data_utils import load_data, dump_data
+from keyword_extraction import KeywordManager
+from zhidao_norm import Normalizer
 from settings import (ZHIDAO_ALL_INFO_FILE,
                       ZHIDAO_CRAWLED_FILE,
                       ZHIDAO_NOT_FOUND_FILE,
+                      ZHIDAO_LOG_FILE,
                       ZHIDAO_ERROR_FILE,)
 
 spider = BaiduSpider()
-page_size = 3
 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
 
 not_found_word_file = ZHIDAO_NOT_FOUND_FILE
@@ -29,37 +33,35 @@ crawled_file = ZHIDAO_CRAWLED_FILE
 all_info_file = ZHIDAO_ALL_INFO_FILE
 
 
-def decorator_crawl_answer(func):
-    def new_func(*args, **kwargs):
-        try:
-            res = func(*args, **kwargs)
-            return res
-        except BaseException as err:
-            print('-'*10)
-            print(err)
-            print('-'*10)
-            print(traceback.format_exc())
-            return ([]for _ in range(4))
-    return new_func
+def log_info(*args, sep=' '):
+    info = sep.join(args)
+    print(info)
+    dump_data(ZHIDAO_LOG_FILE, info, mode='a')
 
 
 class Zhidao_spider:
-    def __init__(self, page_size=3, sleep_time=[1,2,3]):
-        self.page_size = page_size
-        self.sleep_time = sleep_time
+    def __init__(self, 
+                 page_size=2, 
+                 retry_time=3, 
+                 proxy_url=None, 
+                 sleep_time=2.5, 
+                 save_res=True,
+                 ):
+        self._page_size = page_size
+        self._sleep_time = sleep_time
 
-        self.normalizer = zhidao_norm.normalizer() 
+        self._normalizer = Normalizer()
 
-        self.NotFoundSet = set()
-        self.keyDCT = OrderedDict()
+        self._not_found = set()
+        self._keyDCT = OrderedDict()
         self.urlDCT = OrderedDict()
         self.content = []
 
         if os.path.exists(crawled_file):
             # print('Load crawled keywords...')
             with open(crawled_file,'r',encoding='utf-8') as f:
-                self.keyDCT = json.load(f)
-                for key, urls in self.keyDCT.items():
+                self._keyDCT = json.load(f)
+                for key, urls in self._keyDCT.items():
                     for url in urls:
                         self.urlDCT[url] = key
 
@@ -67,13 +69,12 @@ class Zhidao_spider:
             # print('Load not found keywords...')
             with open(not_found_word_file,'r',encoding='utf-8') as f:
                 lines = f.readlines()
-            self.NotFoundSet = set(map(lambda x: x.strip(), lines))
-
+            self._not_found = set(map(lambda x: x.strip(), lines))
 
     def crawl_urls(self, key):
         urls = set()
         print("{} Crawl URLS...".format(key))
-        for page in range(1, self.page_size+1):
+        for page in range(1, self._page_size+1):
             try:
                 reslst = spider.search_zhidao(key+' 百度知道', pn=page).plain
             except:
@@ -92,9 +93,26 @@ class Zhidao_spider:
                 urls.add(result['url'])
         return urls
 
-
-    @decorator_crawl_answer
     def crawl_answers(self, url):
+        retry_cnt = 0
+        while 1:
+            retry_cnt += 1
+            try:
+                pass
+            except BaseException as err:
+                if retry_cnt == 1:
+                    print('=='*10)
+                    # print(messages)
+                    print('-'*10)
+                print(traceback.format_exc())
+                print(f'>> retry {retry_cnt} <<')
+                print(f'>> error {str(err)} <<')
+                print('-'*10)
+                if retry_cnt == retry_time:
+                    # return ''
+                    pass
+                else:
+                    time.sleep(wait_seconds)
         response = requests.get(url, headers=headers, proxies=get_proxy(return_str=False))
         if response is None:
             return ([]for _ in range(4))
@@ -128,7 +146,7 @@ class Zhidao_spider:
     
         for key in tqdm(keys):
             print("{} Crawl KEYS...".format(key))
-            if key in self.keyDCT:
+            if key in self._keyDCT:
                 print("{} zhidao has been crawled already.".format(key))
                 continue
 
@@ -147,9 +165,9 @@ class Zhidao_spider:
 
                 is_err = False
                 
-                title = self.normalizer.cleaner(''.join(title).strip())
-                best_answer = self.normalizer.cleaner(''.join(best_answer).strip())
-                other_answers = self.normalizer.cleaner(''.join(other_answers).strip())
+                title = self._normalizer.cleaner(''.join(title).strip())
+                best_answer = self._normalizer.cleaner(''.join(best_answer).strip())
+                other_answers = self._normalizer.cleaner(''.join(other_answers).strip())
                     
                 crawled_content = {'keyword':key, 'url':url, 'title':title, \
                                     'content1':best_answer,'content2':other_answers, \
@@ -157,7 +175,7 @@ class Zhidao_spider:
                 
                 self.content.append(crawled_content)   
                 new_contents.append(crawled_content)   
-                self.keyDCT.setdefault(key, []).append(url)
+                self._keyDCT.setdefault(key, []).append(url)
                 self.urlDCT.setdefault(url, key)
 
                 # print("{} {} Write CONTENTS...".format(key, url))
@@ -166,16 +184,16 @@ class Zhidao_spider:
                     o.write('\n') 
                 # print("{} {} Write Crawled...".format(key, url))
                 with open(crawled_file, 'w', encoding='utf-8') as f:
-                    json.dump(self.keyDCT, f, indent=4, ensure_ascii=False)
+                    json.dump(self._keyDCT, f, indent=4, ensure_ascii=False)
 
             if is_err: 
-                self.NotFoundSet.add(key)
+                self._not_found.add(key)
                 # print("Write Not Found...")
                 with open(not_found_word_file, 'w', encoding='utf-8') as f:
-                    for key in tqdm(self.NotFoundSet):
+                    for key in tqdm(self._not_found):
                         f.write(key+ '\n')
 
-            time.sleep(random.choice(self.sleep_time))
+            sleep_random_time(self._sleep_time)
 
         return new_contents
             
