@@ -171,8 +171,10 @@ class KeywordFilter:
         for v in record_keyword.values():
             total_keyword.extend(v)
         filtered_keyword = list(record_filter.keys())
+        total_keyword = set(total_keyword)
+        filtered_keyword = set(filtered_keyword)
         
-        todo_keyword = list(set(total_keyword)-set(filtered_keyword))
+        todo_keyword = sorted(total_keyword-filtered_keyword)
         
         print(f'\ntotal:{len(total_keyword)}, filtered:{len(filtered_keyword)}, todo:{len(todo_keyword)}')
             
