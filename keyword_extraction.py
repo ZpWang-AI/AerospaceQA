@@ -25,6 +25,9 @@ RECORD_FILE_KEYWORD = path('./dataspace/queried_keywords.json')
 RECORD_FILE_FILTER = path('./dataspace/filtered_keywords.json')
 
 
+sentence_sep = '。？！.?!．'
+
+
 class KeywordQueryer:
     def __init__(self, 
                  prompt="请从文章中抽取出所有的航空航天领域科学技术术语，以列表形式给出。\n输出格式\n- xxx\n- xxx",
@@ -62,7 +65,7 @@ class KeywordQueryer:
         cur_sentence = ''
         for d in content:
             cur_sentence += d
-            if d in '。？！.?!':
+            if d in sentence_sep:
                 sentences.append(cur_sentence)
                 cur_sentence = ''
         if cur_sentence:
@@ -83,15 +86,16 @@ class KeywordQueryer:
                 record = json.load(f)
         else:
             record = {}
+        
+        todo_lst = []
+        for key, content in zip(keys, contents):
+            content = content.strip()
+            if content and key not in record:
+                todo_lst.append([key, content])
+        todo_lst.sort()
             
         print('\n=== openai processing ===\n')
-        for key, content in tqdm(list(zip(keys, contents))):
-            content = content.strip()
-            if not content:
-                continue
-            if key in record:
-                continue
-            
+        for key, content in tqdm(todo_lst):
             new_keywords = []
             for cliped_content in self._clip_content(content):
                 cur_keywords = self._get_response(cliped_content)

@@ -4,7 +4,7 @@ import json
 from tqdm import tqdm
 from pathlib import Path as path
 
-from baike_spider import Baike_spider
+from baike_spider import BaikeSpider
 from zhidao_spider import Zhidao_spider
 from data_utils import load_data, dump_data
 from keyword_extraction import KeywordQueryer, KeywordManager, KeywordFilter
@@ -12,12 +12,6 @@ from keyword_extraction import KeywordQueryer, KeywordManager, KeywordFilter
 
 DATASPACE_PATH = './dataspace/'
 
-
-def main_zhidao():
-    todo_keywords = KeywordManager.get_all_keywords()
-    zhidao_spider = Zhidao_spider(page_size=2, sleep_time=[1,2,3])
-    zhidao_spider.crawl_from_list(todo_keywords)
-    
 
 def main_query_new_keywords():
     # keyword_queryer = KeywordQueryer(max_query_len=200, save_keyword=False)
@@ -48,14 +42,15 @@ def main_filter_new_keywords():
     filter_ = KeywordFilter()
     filter_.filter_keywords()
     
+    
 if __name__ == "__main__":
     
     # KeywordManager.keyword_excel2txt()
 
     # main_baike()    
     # main_zhidao()
-    main_query_new_keywords()
-    # main_filter_new_keywords()
+    # main_query_new_keywords()
+    main_filter_new_keywords()
 
     # KeywordManager.get_new_filter_keywords()
         
