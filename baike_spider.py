@@ -10,7 +10,7 @@ import traceback
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 
-from utils import sleep_random_time
+from utils import sleep_random_time, get_cur_time
 from proxy_utils import get_proxy
 from data_utils import load_data, dump_data
 from settings import (BAIKE_ALL_INFO_FILE,
@@ -32,7 +32,13 @@ def log_info(*args, sep=' '):
     
 
 class BaikeSpider():
-    def __init__(self, retry_time=3, proxy_url=None, sleep_time=2.5, only_abstrct=False) -> None:
+    def __init__(self, 
+                 retry_time=3, 
+                 proxy_url=None, 
+                 sleep_time=2.5, 
+                 only_abstrct=False,
+                 save_res=True,
+                 ) -> None:
         self._crawled = [line['keyword']for line in load_data(BAIKE_CRAWLED_FILE)]
         self._not_found = load_data(BAIKE_NOT_FOUND_FILE)
         self._crawled = set(self._crawled)
@@ -42,6 +48,7 @@ class BaikeSpider():
         self._proxy_url = proxy_url
         self._sleep_time = sleep_time
         self._only_abstract = only_abstrct
+        self._save_res = save_res
 
     def _deal_piece(self, keyword, url, soup):
         title = soup.find('h1').get_text()
@@ -86,19 +93,24 @@ class BaikeSpider():
         content = soup.find('div', class_='main-content')
         if content is None:
             self._not_found.add(keyword)
-            dump_data(BAIKE_NOT_FOUND_FILE, keyword, mode='a')
+            if self._save_res:
+                dump_data(BAIKE_NOT_FOUND_FILE, keyword, mode='a')
             log_info(keyword + " not found in Baidu Baike")
         else:
             self._crawled.add(keyword)
             data_piece = self._deal_piece(keyword, url, soup)
-            dump_data(BAIKE_ALL_INFO_FILE, data_piece, mode='a')
+            if self._save_res:
+                dump_data(BAIKE_ALL_INFO_FILE, data_piece, mode='a')
             crawled_piece = {'keyword': keyword, 'url': url}
-            dump_data(BAIKE_CRAWLED_FILE, crawled_piece, mode='a')
+            if self._save_res:
+                dump_data(BAIKE_CRAWLED_FILE, crawled_piece, mode='a')
             log_info(keyword + " found in Baidu Baike, now crawling...")
 
         sleep_random_time(self._sleep_time)
     
     def crawl_keywords(self, keyword_list):
+        start_log = f"{'*'*10}\n{get_cur_time()}\n{'*'*10}"
+        log_info(start_log)
         for keyword in keyword_list:
             try:
                 self._crawl_one_piece(keyword=keyword)

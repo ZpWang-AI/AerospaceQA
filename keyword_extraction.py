@@ -225,16 +225,7 @@ class KeywordManager:
               f'todo:{len(todo)}')
         
         return sorted(todo)
-    
-    @staticmethod
-    def get_todo_keywords_baike():
-        total = KeywordManager.get_total_keywords()
-        with open()
-        crawled = []
-        not_found = []
         
-        
-            
     @staticmethod
     def get_new_keywords():
         with open(RECORD_FILE_KEYWORD, 'r', encoding='utf-8')as f:

@@ -21,4 +21,27 @@ def sleep_random_time(sleep_time):
     time.sleep(random.random()*sleep_time*2)
     
 
-def retry_times(func, )
+'''
+
+retry_cnt = 0
+while 1:
+    retry_cnt += 1
+    try:
+        pass
+    except BaseException as err:
+        if retry_cnt == 1:
+            print('=='*10)
+            # print(messages)
+            print('-'*10)
+        print(traceback.format_exc())
+        print(f'>> retry {retry_cnt} <<')
+        print(f'>> error {str(err)} <<')
+        print('-'*10)
+        if retry_cnt == retry_time:
+            # return ''
+            pass
+        else:
+            time.sleep(wait_seconds)
+            
+            
+'''

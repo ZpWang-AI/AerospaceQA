@@ -79,9 +79,9 @@ def get_response_chatcompletion(
                 print('=='*10)
                 print(messages)
                 print('-'*10)
-            # print(f'\n{err}\n')
             print(traceback.format_exc())
             print(f'>> retry {retry_cnt} <<')
+            print(f'>> error {str(err)} <<')
             print('-'*10)
             if retry_cnt == retry_time:
                 return ''
