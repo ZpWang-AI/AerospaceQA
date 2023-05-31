@@ -29,7 +29,7 @@ class KeywordQueryer:
     def __init__(self, 
                  prompt="请从文章中抽取出所有的航空航天领域科学技术术语，以列表形式给出。\n输出格式\n- xxx\n- xxx",
                  engine='gpt-3.5-turbo',
-                 max_query_len=1000, 
+                 max_query_len=500, 
                  max_ans_token=2048, 
                  retry_time=3,
                  save_keyword=True,
@@ -205,7 +205,7 @@ class KeywordManager:
             print(f'keyword from {file_excel} to {file_txt}')
     
     @staticmethod
-    def get_all_keywords():
+    def get_total_keywords():
         all_keywords = []
         for file in os.listdir(KEYWORD_FOLD):
             file = KEYWORD_FOLD/file
@@ -213,6 +213,27 @@ class KeywordManager:
                 continue
             all_keywords.extend(load_data_txt(file))
         return sorted(set(all_keywords))
+    
+    @staticmethod
+    def _get_todo_keywords(total, crawled, not_found):
+        total, crawled, not_found = map(set, [total, crawled, not_found])
+        todo = total-crawled-not_found
+        print(f'>> baike keywords <<\n'
+              f'total:{len(total)}'
+              f'crawled:{len(crawled)}'
+              f'not found:{len(not_found)}'
+              f'todo:{len(todo)}')
+        
+        return sorted(todo)
+    
+    @staticmethod
+    def get_todo_keywords_baike():
+        total = KeywordManager.get_total_keywords()
+        with open()
+        crawled = []
+        not_found = []
+        
+        
             
     @staticmethod
     def get_new_keywords():

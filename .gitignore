@@ -1,6 +1,7 @@
 *.sh
 *.zip
 *.ipynb
+_*
 _*.py
 _*.out
 *.log
@@ -14,7 +15,8 @@ logs
 
 # ==============================
 
-v1_*
+v1_*.py
+v2_*.py
 
 openai_apikey.py
 self_generate.py

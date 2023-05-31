@@ -14,7 +14,8 @@ DATASPACE_PATH = './dataspace/'
 
 
 def main_baike():
-    todo_keywords = KeywordManager.get_all_keywords()
+    all_keywords = KeywordManager.get_all_keywords()
+    
     baike_spider = Baike_spider()
     baike_spider.crawl_from_list(todo_keywords)
 
@@ -55,11 +56,14 @@ def main_filter_new_keywords():
     filter_.filter_keywords()
     
 if __name__ == "__main__":
-    for i in range(1):
-        # main_baike()    
-        # main_zhidao()
-        # main_query_new_keywords()
-        # main_filter_new_keywords()
     
-        KeywordManager.get_new_filter_keywords()
+    # KeywordManager.keyword_excel2txt()
+
+    # main_baike()    
+    # main_zhidao()
+    main_query_new_keywords()
+    # main_filter_new_keywords()
+
+    # KeywordManager.get_new_filter_keywords()
         
+    pass

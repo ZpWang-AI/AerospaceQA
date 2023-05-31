@@ -42,7 +42,8 @@ class DataNormalizer:
         
         not_chinese_lst = re.findall(r"[A-Za-z0-9]+", text)
         for w in not_chinese_lst:
-            text = text.replace(w[:58], "")
+            if len(w) > 40:
+                text = text.replace(w[:58], "")
             
         for space in self.spaces:
             text = text.replace(space, ' ')

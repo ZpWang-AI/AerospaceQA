@@ -15,13 +15,18 @@ from collections import OrderedDict
 from baiduspider import BaiduSpider
 
 from proxy_utils import get_proxy
+from settings import (ZHIDAO_ALL_INFO_FILE,
+                      ZHIDAO_CRAWLED_FILE,
+                      ZHIDAO_NOT_FOUND_FILE,
+                      ZHIDAO_ERROR_FILE,)
+
 spider = BaiduSpider()
 page_size = 3
 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
 
-not_found_word_file = 'dataspace/zhidao.Not_found_keyword_list.txt'
-crawled_file = 'dataspace/zhidao.crawled_keyword.json'
-all_info_file = 'dataspace/zhidao.all_crawled_info.jsonl'
+not_found_word_file = ZHIDAO_NOT_FOUND_FILE
+crawled_file = ZHIDAO_CRAWLED_FILE
+all_info_file = ZHIDAO_ALL_INFO_FILE
 
 
 def decorator_crawl_answer(func):
