@@ -53,15 +53,9 @@ class ZhidaoSpider:
 
         self._spider = BaiduSpider()
         self._normalizer = Normalizer()
-
-        if ZHIDAO_CRAWLED_KEYWORD_FILE.exists():
-            self._key_dic = load_data(ZHIDAO_CRAWLED_KEYWORD_FILE)
-        else:
-            self._key_dic = {}
-        if ZHIDAO_CRAWLED_URL_FILE.exists():
-            self._url_set = set(load_data(ZHIDAO_CRAWLED_URL_FILE))
-        else:
-            self._url_set = set()
+    
+        self._key_dic = load_data(ZHIDAO_CRAWLED_KEYWORD_FILE, default={})
+        self._url_set = set(load_data(ZHIDAO_CRAWLED_URL_FILE, default=()))
             
     def _crawl_urls(self, keyword):
         print("{} Crawling ...".format(keyword))

@@ -11,19 +11,14 @@ from pathlib import Path as path
 from tqdm import tqdm
 from collections import OrderedDict
 
-from data_utils import load_data
+from data_utils import load_data, dump_data
 from openai_api import get_response_chatcompletion
 from openai_apikey import api_key
-# from proxy_utils import get_proxy
+from settings import (KEYWORD_FOLD,
+                      RECORD_FILE_KEYWORD,
+                      RECORD_FILE_FILTER)
 
 openai.api_key = api_key
-
-
-DATA_FOLD = path('./dataspace/')
-KEYWORD_FOLD = path('./dataspace/keywords/')
-RECORD_FILE_KEYWORD = path('./dataspace/queried_keywords.json')
-RECORD_FILE_FILTER = path('./dataspace/filtered_keywords.json')
-
 
 sentence_sep = '。？！.?!．'
 
@@ -85,12 +80,8 @@ class KeywordQueryer:
         yield cur_content
     
     def get_new_keywords(self, keys, contents):
-        if RECORD_FILE_KEYWORD.exists():
-            with open(RECORD_FILE_KEYWORD, 'r', encoding='utf-8')as f:
-                record = json.load(f)
-        else:
-            record = {}
-        
+        record = load_data(RECORD_FILE_KEYWORD, default={})
+    
         todo_lst = []
         for key, content in zip(keys, contents):
             content = content.strip()
@@ -160,16 +151,8 @@ class KeywordFilter:
         return output_res
 
     def filter_keywords(self):
-        if RECORD_FILE_KEYWORD.exists():
-            with open(RECORD_FILE_KEYWORD, 'r', encoding='utf-8')as f:
-                record_keyword = json.load(f)
-        else:
-            record_keyword = {}
-        if RECORD_FILE_FILTER.exists():
-            with open(RECORD_FILE_FILTER, 'r', encoding='utf-8')as f:
-                record_filter = json.load(f)
-        else:
-            record_filter = {}
+        record_keyword = load_data(RECORD_FILE_KEYWORD, default={})
+        record_filter = load_data(RECORD_FILE_FILTER, default={})
         
         total_keyword = []
         for v in record_keyword.values():
@@ -210,8 +193,7 @@ class KeywordManager:
             df_keyword = df_keyword.loc[df_keyword.iloc[:, 1]=='是']
             df_keyword = df_keyword.iloc[:, 0]
             str_keyword = '\n'.join(df_keyword.tolist())
-            with open(file_txt, 'w', encoding='utf-8')as f:
-                f.write(str_keyword)
+            dump_data(file_txt, str_keyword, 'w')
             print(f'keyword from {file_excel} to {file_txt}')
     
     @staticmethod
@@ -225,21 +207,8 @@ class KeywordManager:
         return sorted(set(all_keywords))
     
     @staticmethod
-    def _get_todo_keywords(total, crawled, not_found):
-        total, crawled, not_found = map(set, [total, crawled, not_found])
-        todo = total-crawled-not_found
-        print(f'>> baike keywords <<\n'
-              f'total:{len(total)}'
-              f'crawled:{len(crawled)}'
-              f'not found:{len(not_found)}'
-              f'todo:{len(todo)}')
-        
-        return sorted(todo)
-        
-    @staticmethod
     def get_new_keywords():
-        with open(RECORD_FILE_KEYWORD, 'r', encoding='utf-8')as f:
-            queried_keywords = json.load(f)
+        queried_keywords = load_data(RECORD_FILE_KEYWORD, default={})
         total_keywords = []
         for v in queried_keywords.values():
             total_keywords.extend(v)
@@ -257,13 +226,11 @@ class KeywordManager:
         new_keywords = total_keywords-used_keywords
         str_new_keywords = '\n'.join(new_keywords)
         
-        with open('./dataspace/new_keywords.txt', 'w', encoding='utf-8')as f:
-            f.write(str_new_keywords)
+        dump_data('./dataspace/new_keywords.txt', str_new_keywords, 'w')
             
     @staticmethod
     def get_new_filter_keywords():
-        with open(RECORD_FILE_FILTER, 'r', encoding='utf-8')as f:
-            filter_res = json.load(f)
+        filter_res = load_data(RECORD_FILE_FILTER, default={})
         total_keywords = []
         for k, v in filter_res.items():
             if v:
@@ -282,12 +249,11 @@ class KeywordManager:
         new_keywords = total_keywords-used_keywords
         str_new_keywords = '\n'.join(new_keywords)
         
-        with open('./dataspace/new_keywords.txt', 'w', encoding='utf-8')as f:
-            f.write(str_new_keywords)
+        dump_data('./dataspace/new_filtered_keywords.txt', str_new_keywords, 'w')
 
 
 def main_query_new_keywords():
-    # keyword_queryer = KeywordQueryer(max_query_len=200, save_keyword=False)
+    queried_keywords = load_data(RECORD_FILE_KEYWORD, default={})
     keyword_queryer = KeywordQueryer()
     
     baike_urls = []
@@ -295,8 +261,9 @@ def main_query_new_keywords():
     with open('./dataspace/baike.all_crawled_info.jsonl', 'r', encoding='utf-8')as f:
         for line in f.readlines():
             piece = json.loads(line)
-            baike_urls.append(piece['url'])
-            baike_passage.append(piece['content'])
+            if piece['url'] not in queried_keywords:
+                baike_urls.append(piece['url'])
+                baike_passage.append(piece['content'])
     keyword_queryer.get_new_keywords(keys=baike_urls, contents=baike_passage)
     
     zhidao_urls = []
@@ -304,10 +271,12 @@ def main_query_new_keywords():
     with open('./dataspace/zhidao.all_crawled_info.jsonl', 'r', encoding='utf-8')as f:
         for line in f.readlines():
             piece = json.loads(line)
-            zhidao_urls.append(piece['url']+'@@1')
-            zhidao_passage.append(piece['content1'])
-            zhidao_urls.append(piece['url']+'@@2')
-            zhidao_passage.append(piece['content2'])
+            if piece['url']+'@@1' not in queried_keywords:
+                zhidao_urls.append(piece['url']+'@@1')
+                zhidao_passage.append(piece['content1'])
+            if piece['url']+'@@2' not in queried_keywords:
+                zhidao_urls.append(piece['url']+'@@2')
+                zhidao_passage.append(piece['content2'])
     keyword_queryer.get_new_keywords(keys=zhidao_urls, contents=zhidao_passage)    
 
 

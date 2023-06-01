@@ -15,11 +15,14 @@ from typing import *
 #     print('warning: pandas or python-docx has not been installed.')
 
 
-def load_data(file_path):
+def load_data(file_path, default=None):
     file_path = path(file_path)
     if not file_path.exists():
-        print(f'== {file_path} not exists ==')
-        return 
+        if default is None:
+            print(f'== {file_path} not exists ==')
+            return 
+        else:
+            return default
     if file_path.suffix == '.txt':
         with open(file_path, 'r', encoding='utf-8')as f:
             lines = list(filter(lambda x:x, map(lambda x:x.strip(), f.readlines())))

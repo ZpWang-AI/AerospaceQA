@@ -47,17 +47,11 @@ class BaikeSpider():
         self._only_abstract = only_abstrct
         self._save_res = save_res
         
-        if BAIKE_CRAWLED_FILE.exists():
-            self._crawled = [line['keyword']for line in load_data(BAIKE_CRAWLED_FILE)]
-            self._crawled = set(self._crawled)
-        else:
-            self._crawled = set()
-        if BAIKE_NOT_FOUND_FILE.exists():
-            self._not_found = load_data(BAIKE_NOT_FOUND_FILE)
-            self._not_found = set(self._not_found)
-        else:
-            self._not_found = set()
-
+        self._crawled = [line['keyword']for line in load_data(BAIKE_CRAWLED_FILE, default=())]
+        self._crawled = set(self._crawled)
+        self._not_found = load_data(BAIKE_NOT_FOUND_FILE, default=())
+        self._not_found = set(self._not_found)
+        
     def _deal_piece(self, keyword, url, soup):
         title = soup.find('h1').get_text()
         main_content = soup.find('div', class_='main-content').get_text().replace('\n', ' ').replace('\xa0', ' ')
