@@ -18,4 +18,5 @@ PROXY_URL = '''
 
 '''.strip()
 
-OPENAI_API_ERROR_FILE = path('./dataspace/openai.error.txt')
+OPENAI_ERROR_FILE = path('./dataspace/openai.error.txt')
+OPENAI_TOKENS_FILE = path('./dataspace/openai.tokens.jsonl')
