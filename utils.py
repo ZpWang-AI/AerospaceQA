@@ -27,9 +27,9 @@ retry_cnt = 0
 while 1:
     retry_cnt += 1
     try:
-        # ======================
-        pass
-        # ======================
+        # ====================
+        break
+        # ====================
     except BaseException as err:
         if retry_cnt == 1:
             es = '\n'.join(map(str, [
@@ -46,7 +46,7 @@ while 1:
         ]))
         print(es)
         if retry_cnt == retry_time:
-            return ''
+            break
         else:
             sleep_random_time(3)
             

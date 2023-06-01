@@ -32,7 +32,7 @@ class KeywordQueryer:
     def __init__(self, 
                  prompt="请从文章中抽取出所有的航空航天领域科学技术术语，以列表形式给出。\n输出格式\n- xxx\n- xxx",
                  engine='gpt-3.5-turbo',
-                 max_query_len=500, 
+                 max_query_len=1000, 
                  max_ans_token=2048, 
                  retry_time=3,
                  save_keyword=True,
@@ -61,15 +61,19 @@ class KeywordQueryer:
         return list(output_keyword)
 
     def _clip_content(self, content):
+        def clip_sentence(sentence):
+            return [sentence[p:p+self._max_query_len] 
+                    for p in range(0, len(sentence), self._max_query_len)]
+                
         sentences = []
         cur_sentence = ''
         for d in content:
             cur_sentence += d
             if d in sentence_sep:
-                sentences.append(cur_sentence)
+                sentences.extend(clip_sentence(cur_sentence))
                 cur_sentence = ''
         if cur_sentence:
-            sentences.append(cur_sentence)
+            sentences.extend(clip_sentence(cur_sentence))
             
         cur_content = ''
         for sen in sentences:

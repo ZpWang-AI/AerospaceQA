@@ -5,7 +5,7 @@ from tqdm import tqdm
 from pathlib import Path as path
 
 from baike_spider import BaikeSpider
-from zhidao_spider import Zhidao_spider
+from zhidao_spider import ZhidaoSpider
 from data_utils import load_data, dump_data
 from keyword_extraction import KeywordQueryer, KeywordManager, KeywordFilter
 
@@ -49,9 +49,9 @@ if __name__ == "__main__":
 
     # main_baike()    
     # main_zhidao()
-    # main_query_new_keywords()
+    main_query_new_keywords()
     # main_filter_new_keywords()
 
-    KeywordManager.get_new_filter_keywords()
+    # KeywordManager.get_new_filter_keywords()
         
     pass

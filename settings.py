@@ -7,8 +7,8 @@ BAIKE_LOG_FILE = path('./dataspace/baike.log.txt')
 BAIKE_ERROR_FILE = path('./dataspace/baike.error.txt')
 
 ZHIDAO_ALL_INFO_FILE = path('./dataspace/zhidao.all_crawled_info.jsonl')
-ZHIDAO_CRAWLED_FILE = path('./dataspace/zhidao.crawled_keyword.json')
-ZHIDAO_NOT_FOUND_FILE = path('./dataspace/zhidao.Not_found_keyword_list.txt')
+ZHIDAO_CRAWLED_KEYWORD_FILE = path('./dataspace/zhidao.crawled_keyword.json')
+ZHIDAO_CRAWLED_URL_FILE = path('./dataspace/zhidao.crawled_url.txt')
 ZHIDAO_LOG_FILE = path('./dataspace/zhidao.log.txt')
 ZHIDAO_ERROR_FILE = path('./dataspace/zhidao.error.txt')
 

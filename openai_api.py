@@ -3,6 +3,7 @@ import traceback
 import time
 
 from openai_apikey import api_key
+from openai.error import RateLimitError
 
 openai.api_key = api_key
 
@@ -74,6 +75,8 @@ def get_response_chatcompletion(
             if show_output:
                 print(response)
             return response
+        except RateLimitError as err:
+            time.sleep(wait_seconds)
         except BaseException as err:
             if retry_cnt == 1:
                 print('=='*10)

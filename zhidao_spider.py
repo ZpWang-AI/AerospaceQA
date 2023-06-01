@@ -8,6 +8,7 @@ import os
 import json
 import zhidao_norm as zhidao_norm
 import traceback
+import warnings
 
 from tqdm import tqdm
 from lxml import etree
@@ -20,19 +21,14 @@ from data_utils import load_data, dump_data
 from keyword_extraction import KeywordManager
 from zhidao_norm import Normalizer
 from settings import (ZHIDAO_ALL_INFO_FILE,
-                      ZHIDAO_CRAWLED_FILE,
-                      ZHIDAO_NOT_FOUND_FILE,
+                      ZHIDAO_CRAWLED_KEYWORD_FILE,
+                      ZHIDAO_CRAWLED_URL_FILE,
                       ZHIDAO_LOG_FILE,
                       ZHIDAO_ERROR_FILE,
                       PROXY_URL,
                       )
 
-spider = BaiduSpider()
 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
-
-not_found_word_file = ZHIDAO_NOT_FOUND_FILE
-crawled_file = ZHIDAO_CRAWLED_FILE
-all_info_file = ZHIDAO_ALL_INFO_FILE
 
 
 def log_info(*args, sep=' '):
@@ -41,7 +37,7 @@ def log_info(*args, sep=' '):
     dump_data(ZHIDAO_LOG_FILE, info, mode='a')
 
 
-class Zhidao_spider:
+class ZhidaoSpider:
     def __init__(self, 
                  page_size=2, 
                  retry_time=3, 
@@ -55,29 +51,26 @@ class Zhidao_spider:
         self._sleep_time = sleep_time
         self._save_res = save_res
 
+        self._spider = BaiduSpider()
         self._normalizer = Normalizer()
 
-        if ZHIDAO_CRAWLED_FILE.exists():
-            self._key_dic = load_data(ZHIDAO_CRAWLED_FILE)
-            self._url_dic = {}
-            for key, url_lst in self._key_dic.items():
-                for url in url_lst: 
-                   self._url_dic[url] = key
+        if ZHIDAO_CRAWLED_KEYWORD_FILE.exists():
+            self._key_dic = load_data(ZHIDAO_CRAWLED_KEYWORD_FILE)
         else:
             self._key_dic = {}
-            self._url_dic = {}
-        if ZHIDAO_NOT_FOUND_FILE.exists():
-            self._not_found = load_data(ZHIDAO_NOT_FOUND_FILE)
-            self._not_found = set(self._not_found)
+        if ZHIDAO_CRAWLED_URL_FILE.exists():
+            self._url_set = set(load_data(ZHIDAO_CRAWLED_URL_FILE))
         else:
-            self._not_found = set()
-    
+            self._url_set = set()
+            
     def _crawl_urls(self, keyword):
-        print("{} Crawl URLS...".format(keyword))
+        print("{} Crawling ...".format(keyword))
         urls = set()
         for page in range(1, self._page_size+1):
             try:
-                res_lst = spider.search_zhidao(keyword+' 百度知道', pn=page).plain
+                res_lst = self._spider.search_zhidao(keyword+' 百度知道', pn=page).plain
+            except KeyError as err:
+                res_lst = []
             except BaseException as err:
                 es = '\n'.join(map(str, [
                     '=='*10,
@@ -89,11 +82,10 @@ class Zhidao_spider:
                 ]))
                 log_info(es)
                 dump_data(ZHIDAO_ERROR_FILE, es)
+                return 
             
             for result in res_lst:
-                url = result['url']
-                if url not in self._url_dic:
-                    urls.add(result['url'])
+                urls.add(result['url'])
         return urls
 
     def _crawl_answers(self, url):
@@ -116,7 +108,10 @@ class Zhidao_spider:
 
         return title, best_answer, other_answers, links
     
-    def _crawl_one_url(self, keyword, url):
+    def _crawl_single_url(self, keyword, url):
+        if url in self._url_set:
+            return
+        
         title, best_answer, other_answers, links = self._crawl_answers(url)
         links = [url+link for link in links]
         if not (best_answer or other_answers):
@@ -136,38 +131,61 @@ class Zhidao_spider:
             'last_time':time.asctime(),
         }
             
-        if keyword not in self._key_dic:
-            self._key_dic[keyword] = []
-        self._key_dic[keyword].append(url)
-        self._url_dic[url] = keyword
+        self._url_set.add(url)
         if self._save_res:
             dump_data(ZHIDAO_ALL_INFO_FILE, crawled_content, mode='a')
-            with open(ZHIDAO_CRAWLED_FILE, 'w', encoding='utf-8') as f:
-                json.dump(self._key_dic, f, indent=4, ensure_ascii=False)
-            
-    def _crawl_one_keyword(self, keyword):
-        if keyword in self._key_dic:
-            print(f"{keyword} zhidao has been crawled already.")
-            return
+            dump_data(ZHIDAO_CRAWLED_URL_FILE, url, 'a')
 
-        urls = self._crawl_urls(keyword)
-        for url in tqdm(urls, desc=keyword):
+    def crawl_keywords(self, keyword_list):
+        start_log = f"\n{'*'*10}\n{get_cur_time()}\n{'*'*10}"
+        log_info(start_log)
+        
+        log_info('\n=== crawling keywords ===\n')
+        todo_keywords = sorted(set(keyword_list)-set(self._key_dic.keys()))
+        for keyword in tqdm(todo_keywords):
+            urls = self._crawl_urls(keyword)
+            if urls:
+                self._key_dic[keyword] = sorted(urls)
+                if self._save_res:
+                    with open(ZHIDAO_CRAWLED_KEYWORD_FILE, 'w', encoding='utf-8') as f:
+                        json.dump(self._key_dic, f, indent=4, ensure_ascii=False)
+            sleep_random_time(self._sleep_time)
+    
+    def crawl_urls(self):
+        start_log = f"\n{'*'*10}\n{get_cur_time()}\n{'*'*10}"
+        log_info(start_log)
+
+        log_info('\n=== crawling urls ===\n')
+        todo_urls = {}
+        for keyword in self._key_dic:
+            for url in self._key_dic[keyword]:
+                if url not in self._url_set:
+                    todo_urls[url] = keyword
+        
+        for url, keyword in tqdm(sorted(todo_urls.items())):
             retry_cnt = 0
             while 1:
                 retry_cnt += 1
                 try:
-                    self._crawl_one_url(url)
+                    # ====================
+                    self._crawl_single_url(keyword, url)
                     break
+                    # ====================
                 except BaseException as err:
                     if retry_cnt == 1:
-                        es = '\n'.join(['=='*10, keyword, '-'*10])
+                        es = '\n'.join(map(str, [
+                            '=='*10,
+                            keyword,
+                            url,
+                            '-'*10,
+                        ]))
                         log_info(es)
                         dump_data(ZHIDAO_ERROR_FILE, es)
                     es = '\n'.join(map(str, [
                         traceback.format_exc(),
                         f'>> retry {retry_cnt} <<',
                         f'>> error {str(err)} <<',
-                        '-'*10
+                        '-'*10, 
                     ]))
                     log_info(es)
                     dump_data(ZHIDAO_ERROR_FILE, es)
@@ -175,29 +193,19 @@ class Zhidao_spider:
                         break
                     else:
                         sleep_random_time(self._sleep_time)
-
-        sleep_random_time(self._sleep_time)
-
-    def crawl_keywords(self, keyword_list):
-        start_log = f"\n{'*'*10}\n{get_cur_time()}\n{'*'*10}"
-        log_info(start_log)
-        
-        keyword_list = set(keyword_list)
-        todo_keywords = keyword_list-set(self._key_dic.keys())
-        for keyword in tqdm(sorted(todo_keywords)):
-            self._crawl_one_keyword(keyword)
                         
        
 def main_zhidao():
-    total_keywords = KeywordManager.get_all_keywords()
-    zhidao_spider = Zhidao_spider(
+    total_keywords = KeywordManager.get_total_keywords()
+    zhidao_spider = ZhidaoSpider(
         page_size=2,
         retry_time=3,
         proxy_url=PROXY_URL,
         sleep_time=2.5,
-        save_res=False,
+        save_res=True,
     )
     zhidao_spider.crawl_keywords(total_keywords)
+    zhidao_spider.crawl_urls()
     
             
 if __name__ == '__main__':
