@@ -2,8 +2,11 @@ import openai
 import traceback
 import time
 
-from openai_apikey import api_key
 from openai.error import RateLimitError
+
+from openai_apikey import api_key
+from data_utils import dump_data
+from settings import OPENAI_API_ERROR_FILE
 
 openai.api_key = api_key
 
@@ -79,13 +82,21 @@ def get_response_chatcompletion(
             time.sleep(wait_seconds)
         except BaseException as err:
             if retry_cnt == 1:
-                print('=='*10)
-                print(messages)
-                print('-'*10)
-            print(traceback.format_exc())
-            print(f'>> retry {retry_cnt} <<')
-            print(f'>> error {str(err)} <<')
-            print('-'*10)
+                es = '\n'.join(map(str, [
+                    '=='*10,
+                    messages,
+                    '-'*10,
+                ]))
+                print(es)
+                dump_data(OPENAI_API_ERROR_FILE, es, 'a')
+            es = '\n'.join(map(str, [
+                traceback.format_exc(),
+                f'>> retry {retry_cnt} <<',
+                f'>> error {str(err)} <<',
+                '-'*10
+            ]))
+            print(es)
+            dump_data(OPENAI_API_ERROR_FILE, es, 'a')
             if retry_cnt == retry_time:
                 return ''
             else:
