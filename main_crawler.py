@@ -50,8 +50,8 @@ if __name__ == "__main__":
     # main_baike()    
     # main_zhidao()
     # main_query_new_keywords()
-    main_filter_new_keywords()
+    # main_filter_new_keywords()
 
-    # KeywordManager.get_new_filter_keywords()
+    KeywordManager.get_new_filter_keywords()
         
     pass

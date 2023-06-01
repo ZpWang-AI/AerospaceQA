@@ -27,21 +27,27 @@ retry_cnt = 0
 while 1:
     retry_cnt += 1
     try:
+        # ======================
         pass
+        # ======================
     except BaseException as err:
         if retry_cnt == 1:
-            print('=='*10)
-            # print(messages)
-            print('-'*10)
-        print(traceback.format_exc())
-        print(f'>> retry {retry_cnt} <<')
-        print(f'>> error {str(err)} <<')
-        print('-'*10)
+            es = '\n'.join(map(str, [
+                '=='*10,
+                message,
+                '-'*10,
+            ]))
+            print(es)
+        es = '\n'.join(map(str, [
+            traceback.format_exc(),
+            f'>> retry {retry_cnt} <<',
+            f'>> error {str(err)} <<',
+            '-'*10, 
+        ]))
+        print(es)
         if retry_cnt == retry_time:
-            # return ''
-            pass
+            return ''
         else:
-            time.sleep(wait_seconds)
-            
+            sleep_random_time(3)
             
 '''
