@@ -9,6 +9,7 @@ import traceback
 
 from bs4 import BeautifulSoup
 from tqdm import tqdm
+from requests.exceptions import ProxyError
 
 from utils import sleep_random_time, get_cur_time
 from proxy_utils import get_proxy
@@ -121,6 +122,8 @@ class BaikeSpider():
                 try:
                     self._crawl_one_piece(keyword)
                     break
+                except ProxyError as err:
+                    sleep_random_time(self._sleep_time)
                 except BaseException as err:
                     if retry_cnt == 1:
                         es = '\n'.join(['=='*10, keyword, '-'*10])
