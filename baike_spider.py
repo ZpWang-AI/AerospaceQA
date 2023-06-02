@@ -96,7 +96,7 @@ class BaikeSpider():
             self._not_found.add(keyword)
             if self._save_res:
                 dump_data(BAIKE_NOT_FOUND_FILE, keyword, mode='a')
-            log_info(keyword + " not found in Baidu Baike")
+            # log_info(keyword + " not found in Baidu Baike")
         else:
             self._crawled.add(keyword)
             data_piece = self._deal_piece(keyword, url, soup)
@@ -105,7 +105,7 @@ class BaikeSpider():
             crawled_piece = {'keyword': keyword, 'url': url}
             if self._save_res:
                 dump_data(BAIKE_CRAWLED_FILE, crawled_piece, mode='a')
-            log_info(keyword + " found in Baidu Baike, now crawling...")
+            # log_info(keyword + " found in Baidu Baike, now crawling...")
 
         sleep_random_time(self._sleep_time)
     
@@ -115,7 +115,7 @@ class BaikeSpider():
         
         keyword_list = set(keyword_list)
         todo_keywords = keyword_list-self._crawled-self._not_found
-        for keyword in tqdm(sorted(todo_keywords)):
+        for keyword in tqdm(sorted(todo_keywords), desc='baike'):
             exception_handling(
                 target_func=lambda:self._crawl_one_piece(keyword),
                 display_message=keyword,

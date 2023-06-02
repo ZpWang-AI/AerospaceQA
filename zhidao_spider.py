@@ -58,7 +58,7 @@ class ZhidaoSpider:
         self._url_set = set(load_data(ZHIDAO_CRAWLED_URL_FILE, default=()))
             
     def _crawl_urls(self, keyword):
-        log_info("{} Crawling ...".format(keyword))
+        # log_info("{} Crawling ...".format(keyword))
         urls = set()
         for page in range(1, self._page_size+1):
             res_lst = exception_handling(
@@ -88,6 +88,8 @@ class ZhidaoSpider:
             
         # response.encoding = 'gb1213'
         html = etree.HTML(response.text)
+        if html is None:
+            return ([]for _ in range(4))
         title = html.xpath('//*[@id="wgt-ask"]/h1/span//text()')
         best_answer = html.xpath('//div[@class="best-text mb-10 dd"]//text()')
         if not best_answer: best_answer = html.xpath('//div[@class="best-text mb-10"]//text()')
@@ -131,7 +133,7 @@ class ZhidaoSpider:
         
         log_info('\n=== crawling keywords ===\n')
         todo_keywords = sorted(set(keyword_list)-set(self._key_dic.keys()))
-        for keyword in tqdm(todo_keywords):
+        for keyword in tqdm(todo_keywords, desc='zhidao keywords'):
             urls = self._crawl_urls(keyword)
             if urls:
                 self._key_dic[keyword] = sorted(urls)
@@ -151,7 +153,7 @@ class ZhidaoSpider:
                 if url not in self._url_set:
                     todo_urls[url] = keyword
         
-        for url, keyword in tqdm(sorted(todo_urls.items())):
+        for url, keyword in tqdm(sorted(todo_urls.items()), desc='zhidao urls'):
             exception_handling(
                 target_func=lambda:self._crawl_single_url(keyword, url),
                 display_message=f'{keyword}\n{url}',

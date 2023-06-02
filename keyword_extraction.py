@@ -90,7 +90,7 @@ class KeywordQueryer:
         todo_lst.sort()
             
         print('\n=== openai processing ===\n')
-        for key, content in tqdm(todo_lst):
+        for key, content in tqdm(todo_lst, desc='query keywords'):
             new_keywords = []
             for cliped_content in self._clip_content(content):
                 cur_keywords = self._get_response(cliped_content)
@@ -166,7 +166,7 @@ class KeywordFilter:
         print(f'\ntotal:{len(total_keyword)}, filtered:{len(filtered_keyword)}, todo:{len(todo_keyword)}')
             
         print('\n=== openai processing ===\n')
-        for p in tqdm(list(range(0, len(todo_keyword), self._max_filter_cnt))):
+        for p in tqdm(list(range(0, len(todo_keyword), self._max_filter_cnt)), desc='filter keywords'):
             cur_keywords = todo_keyword[p:p+self._max_filter_cnt]
             content = '\n'.join(cur_keywords)
             filter_res = self._get_response(content)
