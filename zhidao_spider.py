@@ -60,15 +60,20 @@ class ZhidaoSpider:
     def _crawl_urls(self, keyword):
         # log_info("{} Crawling ...".format(keyword))
         urls = set()
+        
+        def exception_handle_func(err):
+            if type(err) == KeyError:
+                return 5
+            if type(err) == requests.exceptions.SSLError and 'Max retries exceeded with url' in str(err):
+                return 5
+        
         for page in range(1, self._page_size+1):
             res_lst = exception_handling(
                 target_func=lambda:self._spider.search_zhidao(keyword+' 百度知道', pn=page).plain,
                 display_message=keyword,
                 error_file=ZHIDAO_ERROR_FILE,
                 error_return=(),
-                exception_handle_methods=(
-                    [KeyError, lambda:5],
-                ),
+                exception_handle_func=exception_handle_func,
                 retry_time=3,
                 sleep_time=self._sleep_time,
             )
@@ -153,13 +158,17 @@ class ZhidaoSpider:
                 if url not in self._url_set:
                     todo_urls[url] = keyword
         
+        def exception_handle_func(err):
+            if type(err) == requests.exceptions.SSLError and 'Max retries exceeded with url' in str(err):
+                return 5
+        
         for url, keyword in tqdm(sorted(todo_urls.items()), desc='zhidao urls'):
             exception_handling(
                 target_func=lambda:self._crawl_single_url(keyword, url),
                 display_message=f'{keyword}\n{url}',
                 error_file=ZHIDAO_ERROR_FILE,
                 error_return=None,
-                exception_handle_methods=(),
+                exception_handle_func=exception_handle_func,
                 retry_time=self._retry_time,
                 sleep_time=self._sleep_time,
             )

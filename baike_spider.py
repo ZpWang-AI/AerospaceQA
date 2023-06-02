@@ -115,15 +115,20 @@ class BaikeSpider():
         
         keyword_list = set(keyword_list)
         todo_keywords = keyword_list-self._crawled-self._not_found
+        
+        def exception_handle_func(err):
+            if type(err) == ProxyError:
+                return True
+            if type(err) == requests.exceptions.SSLError and 'Max retries exceeded with url' in str(err):
+                return 5
+        
         for keyword in tqdm(sorted(todo_keywords), desc='baike'):
             exception_handling(
                 target_func=lambda:self._crawl_one_piece(keyword),
                 display_message=keyword,
                 error_file=BAIKE_ERROR_FILE,
                 error_return=None,
-                exception_handle_methods=(
-                    [ProxyError, lambda:sleep_random_time(self._sleep_time)],
-                ),
+                exception_handle_func=exception_handle_func,
                 retry_time=self._retry_time,
                 sleep_time=self._sleep_time,
             )

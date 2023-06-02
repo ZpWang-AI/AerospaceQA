@@ -3,6 +3,7 @@ import traceback
 import time
 import threading
 import copy
+import requests
 
 from openai.error import RateLimitError, APIError, APIConnectionError
 
@@ -82,15 +83,23 @@ def get_response_chatcompletion(
         if show_output:
             print(response)
         return response
+    
+    def exception_handle_func(err):
+        if type(err) == RateLimitError:
+            return True
+        if type(err) == APIConnectionError and 'Max retries exceeded with url' in str(err):
+            return 5
+        if type(err) == APIError and 'Bad gateway' in str(err):
+            return True
+        if type(err) == APIError and 'HTTP code 502' in str(err):
+            return True
 
     return exception_handling(
         target_func=chat_func,
         display_message=messages,
         error_file=OPENAI_ERROR_FILE,
         error_return='',
-        exception_handle_methods=(
-            [RateLimitError, lambda:time.sleep(wait_seconds)],
-        ),
+        exception_handle_func=exception_handle_func,
         retry_time=retry_time,
         sleep_time=wait_seconds,
     )

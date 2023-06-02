@@ -6,12 +6,15 @@ from data_utils import load_data
 from keyword_extraction import KeywordManager
 from settings import (BAIKE_ALL_INFO_FILE,
                       BAIKE_NOT_FOUND_FILE,
+                      BAIKE_ERROR_FILE,
                       ZHIDAO_ALL_INFO_FILE,
                       ZHIDAO_CRAWLED_KEYWORD_FILE,
                       ZHIDAO_CRAWLED_URL_FILE,
+                      ZHIDAO_ERROR_FILE,
                       RECORD_FILE_KEYWORD,
                       RECORD_FILE_FILTER,
-                      KEYWORD_FOLD
+                      KEYWORD_FOLD,
+                      OPENAI_ERROR_FILE,
                       )
 
 
@@ -100,8 +103,23 @@ class Analyzer:
     
     @staticmethod
     def analyze_error():
+        # error_file = BAIKE_ERROR_FILE
+        # error_file = ZHIDAO_ERROR_FILE
+        error_file = OPENAI_ERROR_FILE
+        error_content = load_data(error_file)
+        prefix = '>> error '
+        error_lines = []
+        for line in error_content:
+            if line[:len(prefix)] == prefix:
+                error_lines.append(line)
+        for line in error_lines:
+            if 'Max retries exceeded with url' not in line and \
+                'Bad gateway' not in line:
+            # if 1:
+                print(line)
         pass
     
 
 if __name__ == '__main__':
-    Analyzer.analyze_crawled_result()
+    # Analyzer.analyze_crawled_result()
+    Analyzer.analyze_error()

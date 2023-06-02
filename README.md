@@ -11,6 +11,8 @@
 ### 文件结构
 
 ```
+| settings.py
+
 | utils.py
 | data_utils.py
 | proxy_utils.py
@@ -20,21 +22,34 @@
 | baike_spider.py
 | zhidao_norm.py
 | zhidao_spider.py
-| keyword_crawler.py
+| keyword_extraction.py
+
 | crawled_data_norm.py
-| main_crawler.py
+| main.py
+| analyze.py
 
 | dataspace
 	| keywords
+		| keyword1.xlsx
 		| keyword1.txt
+		| keyword2.xlsx
 		| keyword2.txt
 	| baike.all_crawled_info.jsonl
 	| baike.crawled_keyword.jsonl
 	| baike.not_found_keyword_list.txt
 	| baike.log.txt
+	| baike.error.txt
 	| zhidao.all_crawled_info.jsonl
 	| zhidao.crawled_keyword.json
-	| zhidao.Not_found_keyword_list.txt
+	| zhidao.crawled_url.txt
+	| zhidao.log.txt
+	| zhidao.error.txt
+	| queried_keywords.json
+	| filtered_keywords.json
+	| openai.tokens.jsonl
+	| openai.error.txt
+	| new_filtered_keywords.txt
+
 ```
 
 ### 注意事项
