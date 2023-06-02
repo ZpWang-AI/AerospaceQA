@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 from requests.exceptions import ProxyError
 
-from utils import sleep_random_time, get_cur_time
+from utils import sleep_random_time, get_cur_time, exception_handling
 from proxy_utils import get_proxy
 from data_utils import load_data, dump_data
 from keyword_extraction import KeywordManager
@@ -116,31 +116,17 @@ class BaikeSpider():
         keyword_list = set(keyword_list)
         todo_keywords = keyword_list-self._crawled-self._not_found
         for keyword in tqdm(sorted(todo_keywords)):
-            retry_cnt = 0
-            while 1:
-                retry_cnt += 1
-                try:
-                    self._crawl_one_piece(keyword)
-                    break
-                except ProxyError as err:
-                    sleep_random_time(self._sleep_time)
-                except BaseException as err:
-                    if retry_cnt == 1:
-                        es = '\n'.join(['=='*10, keyword, '-'*10])
-                        log_info(es)
-                        dump_data(BAIKE_ERROR_FILE, es)
-                    es = '\n'.join(map(str, [
-                        traceback.format_exc(),
-                        f'>> retry {retry_cnt} <<',
-                        f'>> error {str(err)} <<',
-                        '-'*10
-                    ]))
-                    log_info(es)
-                    dump_data(BAIKE_ERROR_FILE, es)
-                    if retry_cnt == self._retry_time:
-                        break
-                    else:
-                        sleep_random_time(self._sleep_time)
+            exception_handling(
+                target_func=lambda:self._crawl_one_piece(keyword),
+                display_message=keyword,
+                error_file=BAIKE_ERROR_FILE,
+                error_return=None,
+                exception_handle_methods=(
+                    [ProxyError, lambda:sleep_random_time(self._sleep_time)],
+                ),
+                retry_time=self._retry_time,
+                sleep_time=self._sleep_time,
+            )
 
 
 def main_baike():

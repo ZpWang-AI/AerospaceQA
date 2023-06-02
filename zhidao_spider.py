@@ -15,7 +15,7 @@ from lxml import etree
 from collections import OrderedDict
 from baiduspider import BaiduSpider
 
-from utils import sleep_random_time, get_cur_time
+from utils import sleep_random_time, get_cur_time, exception_handling
 from proxy_utils import get_proxy
 from data_utils import load_data, dump_data
 from keyword_extraction import KeywordManager
@@ -61,22 +61,17 @@ class ZhidaoSpider:
         log_info("{} Crawling ...".format(keyword))
         urls = set()
         for page in range(1, self._page_size+1):
-            try:
-                res_lst = self._spider.search_zhidao(keyword+' 百度知道', pn=page).plain
-            except KeyError as err:
-                res_lst = []
-            except BaseException as err:
-                es = '\n'.join(map(str, [
-                    '=='*10,
-                    keyword,
-                    '-'*10,
-                    traceback.format_exc(),
-                    f'>> error {str(err)} <<',
-                    '-'*10,
-                ]))
-                log_info(es)
-                dump_data(ZHIDAO_ERROR_FILE, es)
-                return 
+            res_lst = exception_handling(
+                target_func=lambda:self._spider.search_zhidao(keyword+' 百度知道', pn=page).plain,
+                display_message=keyword,
+                error_file=ZHIDAO_ERROR_FILE,
+                error_return=(),
+                exception_handle_methods=(
+                    [KeyError, lambda:5],
+                ),
+                retry_time=3,
+                sleep_time=self._sleep_time,
+            )
             
             for result in res_lst:
                 urls.add(result['url'])
@@ -157,39 +152,18 @@ class ZhidaoSpider:
                     todo_urls[url] = keyword
         
         for url, keyword in tqdm(sorted(todo_urls.items())):
-            retry_cnt = 0
-            while 1:
-                retry_cnt += 1
-                try:
-                    # ====================
-                    self._crawl_single_url(keyword, url)
-                    break
-                    # ====================
-                except BaseException as err:
-                    if retry_cnt == 1:
-                        es = '\n'.join(map(str, [
-                            '=='*10,
-                            keyword,
-                            url,
-                            '-'*10,
-                        ]))
-                        log_info(es)
-                        dump_data(ZHIDAO_ERROR_FILE, es)
-                    es = '\n'.join(map(str, [
-                        traceback.format_exc(),
-                        f'>> retry {retry_cnt} <<',
-                        f'>> error {str(err)} <<',
-                        '-'*10, 
-                    ]))
-                    log_info(es)
-                    dump_data(ZHIDAO_ERROR_FILE, es)
-                    if retry_cnt == self._retry_time:
-                        break
-                    else:
-                        sleep_random_time(self._sleep_time)
+            exception_handling(
+                target_func=lambda:self._crawl_single_url(keyword, url),
+                display_message=f'{keyword}\n{url}',
+                error_file=ZHIDAO_ERROR_FILE,
+                error_return=None,
+                exception_handle_methods=(),
+                retry_time=self._retry_time,
+                sleep_time=self._sleep_time,
+            )
                         
        
-def main_zhidao():
+def main_zhidao_keywords():
     total_keywords = KeywordManager.get_total_keywords()
     zhidao_spider = ZhidaoSpider(
         page_size=2,
@@ -199,10 +173,21 @@ def main_zhidao():
         save_res=True,
     )
     zhidao_spider.crawl_keywords(total_keywords)
+
+
+def main_zhidao_urls():
+    zhidao_spider = ZhidaoSpider(
+        page_size=2,
+        retry_time=3,
+        proxy_url=PROXY_URL,
+        sleep_time=2.5,
+        save_res=True,
+    )
     zhidao_spider.crawl_urls()
     
             
 if __name__ == '__main__':
-    main_zhidao()
+    main_zhidao_keywords()
+    main_zhidao_urls()
 
 

@@ -4,9 +4,10 @@ import time
 import threading
 import copy
 
-from openai.error import RateLimitError
+from openai.error import RateLimitError, APIError, APIConnectionError
 
 from openai_apikey import api_key
+from utils import exception_handling
 from data_utils import dump_data
 from settings import (OPENAI_ERROR_FILE, 
                       OPENAI_TOKENS_FILE,
@@ -35,7 +36,6 @@ def get_response_chatcompletion(
 ):
     if messages is None and content is None:
         raise "no content"
-
     if messages is None:
         messages = [{ "role": "user", "content": content}]
         
@@ -64,50 +64,36 @@ def get_response_chatcompletion(
     '''
     if show_input:
         print(messages)
-    retry_cnt = 0
-    while 1:
-        retry_cnt += 1
-        try:
-            chatcompletion = openai.ChatCompletion.create(
-                messages=messages,
-                model=engine,
-                max_tokens=max_tokens,
-                n=n,
-                temperature=temperature,
-                top_p=top_p,
-                presence_penalty=presence_penalty,
-                frequency_penalty=frequency_penalty,
-            )
-            response = chatcompletion['choices'][0]['message']['content']
-            tokens = chatcompletion['usage']
-            dump_data(OPENAI_TOKENS_FILE, tokens, mode='a')
-            if show_output:
-                print(response)
-            return response
-        except RateLimitError as err:
-            time.sleep(wait_seconds)
-        except BaseException as err:
-            if retry_cnt == 1:
-                es = '\n'.join(map(str, [
-                    '=='*10,
-                    messages,
-                    '-'*10,
-                ]))
-                print(es)
-                dump_data(OPENAI_ERROR_FILE, es, 'a')
-            es = '\n'.join(map(str, [
-                traceback.format_exc(),
-                f'>> retry {retry_cnt} <<',
-                f'>> error {str(err)} <<',
-                '-'*10
-            ]))
-            print(es)
-            dump_data(OPENAI_ERROR_FILE, es, 'a')
-            if retry_cnt == retry_time:
-                return ''
-            else:
-                time.sleep(wait_seconds)
+    
+    def chat_func():
+        chatcompletion = openai.ChatCompletion.create(
+            messages=messages,
+            model=engine,
+            max_tokens=max_tokens,
+            n=n,
+            temperature=temperature,
+            top_p=top_p,
+            presence_penalty=presence_penalty,
+            frequency_penalty=frequency_penalty,
+        )
+        response = chatcompletion['choices'][0]['message']['content']
+        tokens = chatcompletion['usage']
+        dump_data(OPENAI_TOKENS_FILE, tokens, mode='a')
+        if show_output:
+            print(response)
+        return response
 
+    return exception_handling(
+        target_func=chat_func,
+        display_message=messages,
+        error_file=OPENAI_ERROR_FILE,
+        error_return='',
+        exception_handle_methods=(
+            [RateLimitError, lambda:time.sleep(wait_seconds)],
+        ),
+        retry_time=retry_time,
+        sleep_time=wait_seconds,
+    )
 
 def get_response_chatcompletion_multithread(
     message_list=None,
