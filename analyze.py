@@ -18,27 +18,49 @@ from settings import (BAIKE_ALL_INFO_FILE,
                       )
 
 
-def get_file_line_count(file_path):
-    line_count = 0
+def count_file_line(file_path):
+    line_cnt = 0
     with open(file_path, 'r', encoding='utf-8') as file:
         for _ in file:
-            line_count += 1
-    return line_count
+            line_cnt += 1
+    return line_cnt
 
 
 class Analyzer:
     @staticmethod
     def analyze_crawled_result():
-        baike_found_cnt = get_file_line_count(BAIKE_ALL_INFO_FILE)
-        baike_not_found_cnt = get_file_line_count(BAIKE_NOT_FOUND_FILE)
-        baike_crawled_cnt = baike_found_cnt+baike_not_found_cnt
+        baike_found:int
+        baike_not_found:int
+        baike_todo:int
         
-        zhidao_info_cnt = get_file_line_count(ZHIDAO_ALL_INFO_FILE)
+        zhidao_keyword_found:int
+        zhidao_keyword_todo:int
+        zhidao_url_found:int
+        zhidao_url_todo:int
+        
+        keyword_query_done:int
+        keyword_query_todo:int
+        keyword_filter_yes:int
+        keyword_filter_no:int
+        keyword_filter_todo:int
+        keyword_manual_yes:int
+        keyword_manual_no:int
+        keyword_manual_todo:int
+        
+        baike_found = count_file_line(BAIKE_ALL_INFO_FILE)
+        baike_not_found = count_file_line(BAIKE_NOT_FOUND_FILE)
+        
+        zhidao_keyword_found = 0
+        zhidao_url_todo = 0
+        for keyword, urls in load_data(ZHIDAO_CRAWLED_KEYWORD_FILE, default={}).items():
+            zhidao_keyword_found += 1
+            zhidao_url_todo += len(urls)
+        
+        
+        
+        zhidao_info_cnt = count_file_line(ZHIDAO_ALL_INFO_FILE)
         zhidao_key_cnt = 0
         zhidao_url_cnt = 0
-        for keyword, urls in load_data(ZHIDAO_CRAWLED_KEYWORD_FILE, default={}).items():
-            zhidao_key_cnt += 1
-            zhidao_url_cnt += len(urls)
 
         query_content_cnt = 0
         queried_cnt = set()
@@ -53,7 +75,7 @@ class Analyzer:
         for file in os.listdir(KEYWORD_FOLD):
             cur_file = KEYWORD_FOLD/file
             if cur_file.suffix == '.txt':
-                manual_cnt += get_file_line_count(cur_file)
+                manual_cnt += count_file_line(cur_file)
         keyword_cnt = len(KeywordManager.get_total_keywords())
         
         baike_progress = baike_crawled_cnt/keyword_cnt
