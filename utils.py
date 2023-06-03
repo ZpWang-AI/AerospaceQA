@@ -75,7 +75,7 @@ def exception_handling(
                 if retry_cnt == 1:
                     error_s = '\n'.join([
                         '=='*10,
-                        display_message,
+                        str(display_message),
                         '-'*10,
                     ])
                     print(error_s)

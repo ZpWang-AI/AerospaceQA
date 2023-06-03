@@ -250,6 +250,7 @@ class KeywordManager:
         str_new_keywords = '\n'.join(new_keywords)
         
         dump_data('./dataspace/new_filtered_keywords.txt', str_new_keywords, 'w')
+        print(f'\nget new filtered keywords {len(new_keywords)}\n')
 
 
 def main_query_new_keywords():

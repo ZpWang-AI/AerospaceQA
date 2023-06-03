@@ -1,4 +1,6 @@
 import os
+import json
+import pandas as pd
 
 from pathlib import Path as path
 
@@ -35,11 +37,13 @@ class Analyzer:
         
         zhidao_keyword_found:int
         zhidao_keyword_todo:int
+        # zhidao_keyword_cnt:int
         zhidao_url_found:int
         zhidao_url_todo:int
         
         keyword_query_done:int
         keyword_query_todo:int
+        keyword_query_cnt:int
         keyword_filter_yes:int
         keyword_filter_no:int
         keyword_filter_todo:int
@@ -51,77 +55,95 @@ class Analyzer:
         baike_not_found = count_file_line(BAIKE_NOT_FOUND_FILE)
         
         zhidao_keyword_found = 0
-        zhidao_url_todo = 0
+        zhidao_keyword_cnt = 0
         for keyword, urls in load_data(ZHIDAO_CRAWLED_KEYWORD_FILE, default={}).items():
             zhidao_keyword_found += 1
-            zhidao_url_todo += len(urls)
+            zhidao_keyword_cnt += len(urls)
+        zhidao_url_found = count_file_line(ZHIDAO_ALL_INFO_FILE)
+        zhidao_url_todo = zhidao_keyword_cnt-zhidao_url_found
         
-        
-        
-        zhidao_info_cnt = count_file_line(ZHIDAO_ALL_INFO_FILE)
-        zhidao_key_cnt = 0
-        zhidao_url_cnt = 0
-
-        query_content_cnt = 0
-        queried_cnt = set()
+        keyword_query_done = 0
+        keyword_query_cnt = set()
         for k, v in load_data(RECORD_FILE_KEYWORD, default={}).items():
-            query_content_cnt += 1
-            queried_cnt.update(v)
-        queried_cnt = len(queried_cnt)
-        filtered_res = load_data(RECORD_FILE_FILTER, default={})
-        filtered_cnt = len(filtered_res)
-        rest_cnt = list(filtered_res.values()).count(True)
-        manual_cnt = 0
+            keyword_query_done += 1
+            keyword_query_cnt.update(v)
+        keyword_query_cnt = len(keyword_query_cnt)
+        keyword_query_todo = baike_found+zhidao_url_found-keyword_query_done
+        
+        filter_res = load_data(RECORD_FILE_FILTER, default={})
+        keyword_filter_yes = list(filter_res.values()).count(True)
+        keyword_filter_no = len(filter_res)-keyword_filter_yes
+        keyword_filter_todo = keyword_query_cnt-len(filter_res)
+        
+        keyword_manual_yes = len(KeywordManager.get_total_keywords())
+        keyword_manual_total = set()
         for file in os.listdir(KEYWORD_FOLD):
             cur_file = KEYWORD_FOLD/file
-            if cur_file.suffix == '.txt':
-                manual_cnt += count_file_line(cur_file)
-        keyword_cnt = len(KeywordManager.get_total_keywords())
+            if cur_file.suffix in ['.xlsx', '.xls']:
+                df = pd.read_excel(cur_file)
+                df = df.iloc[:, 0]
+                keyword_manual_total.update(df.tolist())
+        keyword_manual_total = len(keyword_manual_total)
+        keyword_manual_no = keyword_manual_total-keyword_manual_yes
+        keyword_manual_todo = keyword_filter_yes-keyword_manual_total
         
-        baike_progress = baike_crawled_cnt/keyword_cnt
-        zhidao_key_progress = zhidao_key_cnt/keyword_cnt
-        zhidao_url_progress = zhidao_info_cnt/zhidao_url_cnt
-        keyword_query_progress = query_content_cnt/(baike_found_cnt+zhidao_info_cnt)
-        keyword_filter_progress = filtered_cnt/queried_cnt
-        manual_progress = manual_cnt/rest_cnt
+        baike_todo = set(KeywordManager.get_total_keywords()) - \
+                     set([p['keyword']for p in load_data(BAIKE_ALL_INFO_FILE)]) - \
+                     set(load_data(BAIKE_NOT_FOUND_FILE))
+        baike_todo = len(baike_todo)
+        zhidao_keyword_todo = keyword_manual_yes-zhidao_keyword_found
+        
+        final_res = {
+            '百度知道':{
+                '根据关键词爬取文章':{
+                    '已爬取':baike_found,
+                    '不存在':baike_not_found,
+                    '待爬取':baike_todo,
+                },
+            },
+            '百度百科':{
+                '根据关键词搜索网址':{
+                    '已搜索':zhidao_keyword_found,
+                    '待搜索':zhidao_keyword_todo,
+                },
+                '根据网址爬取文章':{
+                    '已爬取':zhidao_url_found,
+                    '待爬取':zhidao_url_todo,
+                },
+            },
+            '关键词':{
+                '根据文章提取关键词':{
+                    '已提取':keyword_query_done,
+                    '待提取':keyword_query_todo,
+                    '关键词数量':keyword_query_cnt,
+                },
+                ' ChatGPT筛选关键词':{
+                    '筛选为是':keyword_filter_yes,
+                    '筛选为否':keyword_filter_no,
+                    '待筛选':keyword_filter_todo,
+                },
+                '人工筛选关键词':{
+                    '筛选为是':keyword_manual_yes,
+                    '筛选为否':keyword_manual_no,
+                    '待筛选':keyword_manual_todo,
+                },
+            },
+        }
+        
+        # print(json.dumps(final_res, indent=4, ensure_ascii=False))
 
-        print(
-            f'baike:',
-            f'  found     {baike_found_cnt}',
-            f'  not found {baike_not_found_cnt}',
-            f'  crawled   {baike_crawled_cnt}',
-            sep='\n',
-        )
-        print(
-            f'zhidao:',
-            f'  key cnt   {zhidao_key_cnt}',
-            f'  url cnt   {zhidao_url_cnt}',
-            f'  crawled   {zhidao_info_cnt}',
-            sep='\n',
-        )
-        print(
-            f'keyword:',
-            f'  queried   {queried_cnt}',
-            f'  filtered  {filtered_cnt}',
-            f'  rest      {rest_cnt}',
-            f'  manual    {manual_cnt}',
-            f'  todo      {keyword_cnt}',
-            sep='\n',
-        )
-        
-        def uniform_progress(progress_name:str, progress_num):
-            return '  '+progress_name.ljust(10, ' ')+'%.2f' % (progress_num*100)
-        
-        print(
-            f'progress:',
-            uniform_progress('baike', baike_progress),
-            uniform_progress('zd key', zhidao_key_progress),
-            uniform_progress('zd url', zhidao_url_progress),
-            uniform_progress('kw query', keyword_query_progress),
-            uniform_progress('kw filter', keyword_filter_progress),
-            uniform_progress('manual', manual_progress),
-            sep='\n'
-        )
+        def print_line(*args):
+            print(*args, sep='\n', end='\n')
+            
+        for domain, domain_res in final_res.items():
+            print_line(domain)
+            for task, task_res in domain_res.items():
+                print_line('    '+task)
+                for key, val in task_res.items():
+                    normalized_val = f'{val//1000},{str(val%1000).rjust(3, "0")}' if val >= 1000 else str(val)
+                    normalized_val = normalized_val.rjust(11)
+                    print_line('        '+key+'　'*(5-len(key))+normalized_val)
+            
     
     @staticmethod
     def analyze_error():
@@ -143,5 +165,5 @@ class Analyzer:
     
 
 if __name__ == '__main__':
-    # Analyzer.analyze_crawled_result()
-    Analyzer.analyze_error()
+    Analyzer.analyze_crawled_result()
+    # Analyzer.analyze_error()
