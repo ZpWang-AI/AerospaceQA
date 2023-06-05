@@ -70,7 +70,7 @@ class Normalizer:
         return text
     
     def zhidao_norm(self, answer):
-        answer = answer.encode('iso-8859-1', errors='ignore').decode('gb2312', errors='ignore') 
+        # answer = answer.encode('iso-8859-1', errors='ignore').decode('gb2312', errors='ignore') 
         unicodedata.normalize('NFKC', answer)
         answer = re.sub("\n展开全部\n", "", answer)
         answer = re.sub("展开全部", "", answer)

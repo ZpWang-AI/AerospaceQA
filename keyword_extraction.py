@@ -15,8 +15,8 @@ from data_utils import load_data, dump_data
 from openai_api import get_response_chatcompletion
 from openai_apikey import api_key
 from settings import (KEYWORD_FOLD,
-                      RECORD_FILE_KEYWORD,
-                      RECORD_FILE_FILTER)
+                      KEYWORD_QUERY_FILE_JSON,
+                      KEYWORD_FILTER_FILE_JSON)
 
 openai.api_key = api_key
 
@@ -80,7 +80,7 @@ class KeywordQueryer:
         yield cur_content
     
     def get_new_keywords(self, keys, contents):
-        record = load_data(RECORD_FILE_KEYWORD, default={})
+        record = load_data(KEYWORD_QUERY_FILE_JSON, default={})
     
         todo_lst = []
         for key, content in zip(keys, contents):
@@ -98,8 +98,7 @@ class KeywordQueryer:
             
             record[key] = new_keywords
             if self._save_keyword:
-                with open(RECORD_FILE_KEYWORD, 'w', encoding='utf-8')as f:
-                    json.dump(record, f, ensure_ascii=False, indent=4)
+                dump_data(KEYWORD_QUERY_FILE_JSON, record, 'w', indent=4)
 
 
 class KeywordFilter:
@@ -151,8 +150,8 @@ class KeywordFilter:
         return output_res
 
     def filter_keywords(self):
-        record_keyword = load_data(RECORD_FILE_KEYWORD, default={})
-        record_filter = load_data(RECORD_FILE_FILTER, default={})
+        record_keyword = load_data(KEYWORD_QUERY_FILE_JSON, default={})
+        record_filter = load_data(KEYWORD_FILTER_FILE_JSON, default={})
         
         total_keyword = []
         for v in record_keyword.values():
@@ -173,8 +172,7 @@ class KeywordFilter:
             for k, v in filter_res.items():
                 record_filter[k] = v
             if self._save_keyword:
-                with open(RECORD_FILE_FILTER, 'w', encoding='utf-8')as f:
-                    json.dump(record_filter, f, ensure_ascii=False, indent=4)  
+                dump_data(KEYWORD_FILTER_FILE_JSON, record_filter, 'w', indent=4)  
 
 
 class KeywordManager:
@@ -208,7 +206,7 @@ class KeywordManager:
     
     @staticmethod
     def get_new_keywords():
-        queried_keywords = load_data(RECORD_FILE_KEYWORD, default={})
+        queried_keywords = load_data(KEYWORD_QUERY_FILE_JSON, default={})
         total_keywords = []
         for v in queried_keywords.values():
             total_keywords.extend(v)
@@ -229,8 +227,8 @@ class KeywordManager:
         dump_data('./dataspace/new_keywords.txt', str_new_keywords, 'w')
             
     @staticmethod
-    def get_new_filter_keywords():
-        filter_res = load_data(RECORD_FILE_FILTER, default={})
+    def get_new_filter_keywords(num=None, to_txt=True):
+        filter_res = load_data(KEYWORD_FILTER_FILE_JSON, default={})
         total_keywords = []
         for k, v in filter_res.items():
             if v:
@@ -247,14 +245,19 @@ class KeywordManager:
         used_keywords = set(used_keywords)
         
         new_keywords = total_keywords-used_keywords
-        str_new_keywords = '\n'.join(new_keywords)
-        
-        dump_data('./dataspace/new_filtered_keywords.txt', str_new_keywords, 'w')
+        new_keywords = sorted(new_keywords)
         print(f'\nget new filtered keywords {len(new_keywords)}\n')
-
+        
+        if num is not None:
+            new_keywords = new_keywords[:num]
+        
+        if to_txt:
+            str_new_keywords = '\n'.join(new_keywords)
+            dump_data('./dataspace/new_filtered_keywords.txt', str_new_keywords, 'w')
+            
 
 def main_query_new_keywords():
-    queried_keywords = load_data(RECORD_FILE_KEYWORD, default={})
+    queried_keywords = load_data(KEYWORD_QUERY_FILE_JSON, default={})
     keyword_queryer = KeywordQueryer()
     
     baike_urls = []

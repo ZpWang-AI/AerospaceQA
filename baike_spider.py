@@ -15,11 +15,11 @@ from utils import sleep_random_time, get_cur_time, exception_handling
 from proxy_utils import get_proxy
 from data_utils import load_data, dump_data
 from keyword_extraction import KeywordManager
-from settings import (BAIKE_ALL_INFO_FILE,
-                      BAIKE_CRAWLED_FILE,
-                      BAIKE_NOT_FOUND_FILE,
-                      BAIKE_LOG_FILE,
-                      BAIKE_ERROR_FILE,
+from settings import (BAIKE_ALL_INFO_FILE_JSONL,
+                      BAIKE_CRAWLED_FILE_JSONL,
+                      BAIKE_NOT_FOUND_FILE_TXT,
+                      BAIKE_LOG_FILE_TXT,
+                      BAIKE_ERROR_FILE_TXT,
                       PROXY_URL,
                       )
 
@@ -31,7 +31,7 @@ headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/
 def log_info(*args, sep=' '):
     info = sep.join(args)
     print(info)
-    dump_data(BAIKE_LOG_FILE, info, mode='a')
+    dump_data(BAIKE_LOG_FILE_TXT, info, mode='a')
     
 
 class BaikeSpider():
@@ -48,9 +48,9 @@ class BaikeSpider():
         self._only_abstract = only_abstrct
         self._save_res = save_res
         
-        self._crawled = [line['keyword']for line in load_data(BAIKE_CRAWLED_FILE, default=())]
+        self._crawled = [line['keyword']for line in load_data(BAIKE_CRAWLED_FILE_JSONL, default=())]
         self._crawled = set(self._crawled)
-        self._not_found = load_data(BAIKE_NOT_FOUND_FILE, default=())
+        self._not_found = load_data(BAIKE_NOT_FOUND_FILE_TXT, default=())
         self._not_found = set(self._not_found)
         
     def _deal_piece(self, keyword, url, soup):
@@ -95,16 +95,16 @@ class BaikeSpider():
         if content is None:
             self._not_found.add(keyword)
             if self._save_res:
-                dump_data(BAIKE_NOT_FOUND_FILE, keyword, mode='a')
+                dump_data(BAIKE_NOT_FOUND_FILE_TXT, keyword, mode='a')
             # log_info(keyword + " not found in Baidu Baike")
         else:
             self._crawled.add(keyword)
             data_piece = self._deal_piece(keyword, url, soup)
             if self._save_res:
-                dump_data(BAIKE_ALL_INFO_FILE, data_piece, mode='a')
+                dump_data(BAIKE_ALL_INFO_FILE_JSONL, data_piece, mode='a')
             crawled_piece = {'keyword': keyword, 'url': url}
             if self._save_res:
-                dump_data(BAIKE_CRAWLED_FILE, crawled_piece, mode='a')
+                dump_data(BAIKE_CRAWLED_FILE_JSONL, crawled_piece, mode='a')
             # log_info(keyword + " found in Baidu Baike, now crawling...")
 
         sleep_random_time(self._sleep_time)
@@ -126,7 +126,7 @@ class BaikeSpider():
             exception_handling(
                 target_func=lambda:self._crawl_one_piece(keyword),
                 display_message=keyword,
-                error_file=BAIKE_ERROR_FILE,
+                error_file=BAIKE_ERROR_FILE_TXT,
                 error_return=None,
                 exception_handle_func=exception_handle_func,
                 retry_time=self._retry_time,

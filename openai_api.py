@@ -10,8 +10,8 @@ from openai.error import RateLimitError, APIError, APIConnectionError
 from openai_apikey import api_key
 from utils import exception_handling
 from data_utils import dump_data
-from settings import (OPENAI_ERROR_FILE, 
-                      OPENAI_TOKENS_FILE,
+from settings import (OPENAI_ERROR_FILE_TXT, 
+                      OPENAI_TOKEN_FILE_JSONL,
                       )
 
 openai.api_key = api_key
@@ -79,7 +79,7 @@ def get_response_chatcompletion(
         )
         response = chatcompletion['choices'][0]['message']['content']
         tokens = chatcompletion['usage']
-        dump_data(OPENAI_TOKENS_FILE, tokens, mode='a')
+        dump_data(OPENAI_TOKEN_FILE_JSONL, tokens, mode='a')
         if show_output:
             print(response)
         return response
@@ -97,7 +97,7 @@ def get_response_chatcompletion(
     return exception_handling(
         target_func=chat_func,
         display_message=messages,
-        error_file=OPENAI_ERROR_FILE,
+        error_file=OPENAI_ERROR_FILE_TXT,
         error_return='',
         exception_handle_func=exception_handle_func,
         retry_time=retry_time,

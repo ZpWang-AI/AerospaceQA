@@ -6,17 +6,16 @@ from pathlib import Path as path
 
 from data_utils import load_data
 from keyword_extraction import KeywordManager
-from settings import (BAIKE_ALL_INFO_FILE,
-                      BAIKE_NOT_FOUND_FILE,
-                      BAIKE_ERROR_FILE,
-                      ZHIDAO_ALL_INFO_FILE,
-                      ZHIDAO_CRAWLED_KEYWORD_FILE,
-                      ZHIDAO_CRAWLED_URL_FILE,
-                      ZHIDAO_ERROR_FILE,
-                      RECORD_FILE_KEYWORD,
-                      RECORD_FILE_FILTER,
+from settings import (BAIKE_ALL_INFO_FILE_JSONL,
+                      BAIKE_NOT_FOUND_FILE_TXT,
+                      BAIKE_ERROR_FILE_TXT,
+                      ZHIDAO_ALL_INFO_FILE_JSONL,
+                      ZHIDAO_CRAWLED_KEYWORD_FILE_JSON,
+                      ZHIDAO_ERROR_FILE_TXT,
+                      KEYWORD_QUERY_FILE_JSON,
+                      KEYWORD_FILTER_FILE_JSON,
                       KEYWORD_FOLD,
-                      OPENAI_ERROR_FILE,
+                      OPENAI_ERROR_FILE_TXT,
                       )
 
 
@@ -35,12 +34,10 @@ class Analyzer:
         baike_not_found:int
         baike_todo:int
         
-        zhidao_keyword_found:int
-        zhidao_keyword_todo:int
-        # zhidao_keyword_cnt:int
-        zhidao_url_found:int
-        zhidao_url_todo:int
-        
+        zhidao_found:int
+        zhidao_todo:int
+        zhidao_cnt:int
+                
         keyword_query_done:int
         keyword_query_todo:int
         keyword_query_cnt:int
@@ -51,26 +48,24 @@ class Analyzer:
         keyword_manual_no:int
         keyword_manual_todo:int
         
-        baike_found = count_file_line(BAIKE_ALL_INFO_FILE)
-        baike_not_found = count_file_line(BAIKE_NOT_FOUND_FILE)
+        baike_found = count_file_line(BAIKE_ALL_INFO_FILE_JSONL)
+        baike_not_found = count_file_line(BAIKE_NOT_FOUND_FILE_TXT)
         
-        zhidao_keyword_found = 0
-        zhidao_keyword_cnt = 0
-        for keyword, urls in load_data(ZHIDAO_CRAWLED_KEYWORD_FILE, default={}).items():
-            zhidao_keyword_found += 1
-            zhidao_keyword_cnt += len(urls)
-        zhidao_url_found = count_file_line(ZHIDAO_ALL_INFO_FILE)
-        zhidao_url_todo = zhidao_keyword_cnt-zhidao_url_found
+        zhidao_found = 0
+        zhidao_cnt = 0
+        for keyword, urls in load_data(ZHIDAO_CRAWLED_KEYWORD_FILE_JSON, default={}).items():
+            zhidao_found += 1
+            zhidao_cnt += len(urls)
         
         keyword_query_done = 0
         keyword_query_cnt = set()
-        for k, v in load_data(RECORD_FILE_KEYWORD, default={}).items():
+        for k, v in load_data(KEYWORD_QUERY_FILE_JSON, default={}).items():
             keyword_query_done += 1
             keyword_query_cnt.update(v)
         keyword_query_cnt = len(keyword_query_cnt)
-        keyword_query_todo = baike_found+zhidao_url_found-keyword_query_done
+        keyword_query_todo = baike_found+zhidao_cnt-keyword_query_done
         
-        filter_res = load_data(RECORD_FILE_FILTER, default={})
+        filter_res = load_data(KEYWORD_FILTER_FILE_JSON, default={})
         keyword_filter_yes = list(filter_res.values()).count(True)
         keyword_filter_no = len(filter_res)-keyword_filter_yes
         keyword_filter_todo = keyword_query_cnt-len(filter_res)
@@ -88,10 +83,10 @@ class Analyzer:
         keyword_manual_todo = keyword_filter_yes-keyword_manual_total
         
         baike_todo = set(KeywordManager.get_total_keywords()) - \
-                     set([p['keyword']for p in load_data(BAIKE_ALL_INFO_FILE)]) - \
-                     set(load_data(BAIKE_NOT_FOUND_FILE))
+                     set([p['keyword']for p in load_data(BAIKE_ALL_INFO_FILE_JSONL)]) - \
+                     set(load_data(BAIKE_NOT_FOUND_FILE_TXT))
         baike_todo = len(baike_todo)
-        zhidao_keyword_todo = keyword_manual_yes-zhidao_keyword_found
+        zhidao_todo = keyword_manual_yes-zhidao_found
         
         final_res = {
             '百度知道':{
@@ -102,13 +97,10 @@ class Analyzer:
                 },
             },
             '百度百科':{
-                '根据关键词搜索网址':{
-                    '已搜索':zhidao_keyword_found,
-                    '待搜索':zhidao_keyword_todo,
-                },
-                '根据网址爬取文章':{
-                    '已爬取':zhidao_url_found,
-                    '待爬取':zhidao_url_todo,
+                '根据关键词搜索网址、爬取文章':{
+                    '已爬取':zhidao_found,
+                    '待爬取':zhidao_todo,
+                    '文章数量':zhidao_cnt,
                 },
             },
             '关键词':{
@@ -147,9 +139,9 @@ class Analyzer:
     
     @staticmethod
     def analyze_error():
-        # error_file = BAIKE_ERROR_FILE
-        # error_file = ZHIDAO_ERROR_FILE
-        error_file = OPENAI_ERROR_FILE
+        # error_file = BAIKE_ERROR_FILE_TXT
+        # error_file = ZHIDAO_ERROR_FILE_TXT
+        error_file = OPENAI_ERROR_FILE_TXT
         error_content = load_data(error_file)
         prefix = '>> error '
         error_lines = []

@@ -41,7 +41,7 @@ def load_data(file_path, default=None):
         return 
 
 
-def dump_data(file_path, content, mode='a+'):
+def dump_data(file_path, content, mode='a+', indent=None):
     file_path = path(file_path)
     if not file_path.exists():
         with open(file_path, 'w', encoding='utf-8')as f:
@@ -51,7 +51,7 @@ def dump_data(file_path, content, mode='a+'):
             f.write(content+'\n')
     elif file_path.suffix == '.json':
         with open(file_path, mode=mode, encoding='utf-8')as f:
-            json.dump(content, f, ensure_ascii=False)
+            json.dump(content, f, ensure_ascii=False, indent=indent)
     elif file_path.suffix == '.jsonl':
         with open(file_path, mode=mode, encoding='utf-8')as f:
             f.write(json.dumps(content, ensure_ascii=False)+'\n')
