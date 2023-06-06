@@ -109,6 +109,7 @@ class KeywordFilter:
 否: xxx,xxx,xxx''',
                  engine='gpt-3.5-turbo',
                  max_filter_cnt=100, 
+                 max_query_len=None,
                  max_ans_token=2048, 
                  retry_time=3,
                  save_keyword=True,
@@ -119,6 +120,8 @@ class KeywordFilter:
         self._max_ans_token = max_ans_token
         self._retry_time = retry_time
         self._save_keyword = save_keyword
+        
+        self._max_query_len = max_query_len if max_query_len else 1000
     
     def _get_response(self, content):
         message_list = [
@@ -154,6 +157,19 @@ class KeywordFilter:
                     output_res[w] = False
         return output_res
 
+    def _clip_content(self, keywords):
+        content = '\n'.join(keywords)
+        if len(content) <= self._max_query_len:
+            return content
+        cur_content = ''
+        for k in keywords:
+            if len(cur_content+'\n'+k) > self._max_query_len:
+                yield cur_content
+                cur_content = k
+            else:
+                cur_content += '\n'+k
+        yield cur_content
+        
     def filter_keywords(self):
         record_keyword = load_data(KEYWORD_QUERY_FILE_JSON, default={})
         record_filter = load_data(KEYWORD_FILTER_FILE_JSON, default={})
@@ -170,11 +186,11 @@ class KeywordFilter:
         print('\n=== openai processing ===\n')
         for p in tqdm(list(range(0, len(todo_keyword), self._max_filter_cnt)), desc='filter keywords'):
             cur_keywords = todo_keyword[p:p+self._max_filter_cnt]
-            content = '\n'.join(cur_keywords)
-            filter_res = self._get_response(content)
-            record_filter.update(filter_res)
-            if self._save_keyword:
-                dump_data(KEYWORD_FILTER_FILE_JSON, record_filter, 'w', indent=4)  
+            for content in self._clip_content(cur_keywords):
+                filter_res = self._get_response(content)
+                record_filter.update(filter_res)
+                if self._save_keyword:
+                    dump_data(KEYWORD_FILTER_FILE_JSON, record_filter, 'w', indent=4)  
 
 
 class KeywordManager:
@@ -240,7 +256,6 @@ class KeywordManager:
         
         new_keywords = total_keywords-used_keywords
         new_keywords = sorted(new_keywords)
-        print(f'\ntodo manual filter keywords {len(new_keywords)}\n')
         
         if num is not None:
             new_keywords = new_keywords[:num]
@@ -307,7 +322,8 @@ def main_excel2txt_manual_todo(part_size=(), sheet_names=()):
         needle += size
         with pd.ExcelWriter(excel_file, mode=('a' if p else 'w'))as f:
             df.to_excel(f, sheet_name=str(sheet_name), index=False, header=False)
-
+    print(f'{len(manual_todo)} manual todo keywords prepared')
+    
     
 if __name__ == '__main__':
     main_excel2txt_manual_todo([2000]*3)

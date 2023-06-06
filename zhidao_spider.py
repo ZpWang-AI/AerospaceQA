@@ -29,6 +29,8 @@ from settings import (ZHIDAO_ALL_INFO_FILE_JSONL,
 
 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
 # headers = None
+
+fail_crawl_urls = 'no urls'
 fail_log_prefix = '@fail@ '
 
 
@@ -36,14 +38,6 @@ def log_info(*args, sep=' '):
     info = sep.join(args)
     print(info)
     dump_data(ZHIDAO_LOG_FILE_TXT, info, mode='a')
-
-
-class ZhidaoCrawlingRecord:
-    def __init__(self, save_res) -> None:
-        self._log_dic = load_data(ZHIDAO_CRAWLED_KEYWORD_FILE_JSON, default={})
-        self._save_res = save_res
-    
-
             
 
 class ZhidaoSpider:
@@ -87,7 +81,7 @@ class ZhidaoSpider:
         urls = set()
         
         def exception_handle_func(err):
-            self._log(keyword, 'no urls', f'{type(err)}\n{str(err)}')
+            self._log(keyword, fail_crawl_urls, f'{type(err)}\n{str(err)}')
             if type(err) == KeyError:
                 return 5
             if type(err) == requests.exceptions.SSLError and 'Max retries exceeded with url' in str(err):
@@ -106,7 +100,7 @@ class ZhidaoSpider:
             for result in res_lst:
                 urls.add(result['url'])
         if urls:
-            self._del_log(keyword, 'no urls')
+            self._del_log(keyword, fail_crawl_urls)
         return sorted(urls)
 
     def _crawl_answers(self, keyword, url):
@@ -169,16 +163,20 @@ class ZhidaoSpider:
         
         keyword_list = set(keyword_list)
         keyword_list = filter(
-            lambda x:x not in self._record or all(v is True for v in self._record[x].values()),
+            lambda x:x not in self._record or any(v is not True for v in self._record[x].values()),
             keyword_list,
         )
         keyword_list = sorted(keyword_list)
         
+        fail_keyword_cnt = 0
         for keyword in tqdm(keyword_list, desc='zhidao'):
-            if keyword not in self._record or 'no urls' in self._record:
+            if keyword not in self._record or fail_crawl_urls in self._record[keyword]:
                 urls = self._crawl_urls(keyword)
+                for url in urls:
+                    self._log(keyword, url, False)
             else:
-                urls = [k for k in self._record[keyword].keys() if k is not True]
+                cur_record = self._record[keyword]
+                urls = list(filter(lambda x:cur_record[x] is not True, cur_record.keys()))
             if not urls:
                 continue
             
@@ -189,6 +187,8 @@ class ZhidaoSpider:
                     if type(err) == requests.exceptions.SSLError and 'Max retries exceeded with url' in str(err):
                         return 5
                     if type(err) == requests.exceptions.ProxyError and 'Max retries exceeded with url' in str(err):
+                        return 5
+                    if "Invalid URL 'no urls'" in str(err):
                         return 5
                                    
                 crawl_res = exception_handling(
@@ -204,11 +204,15 @@ class ZhidaoSpider:
                 if crawl_res:
                     self._log(keyword, url, True)
                     success_cnt += 1
-
                 sleep_random_time(self._sleep_time)
             
             if success_cnt:
                 log_info(f'\n{keyword} success, {success_cnt} crawled\n')
+            else:
+                fail_keyword_cnt += 1
+                if fail_keyword_cnt >= 3:
+                    print('\n too many failure, no more crawling')
+                    return
             sleep_random_time(self._sleep_time)
           
        

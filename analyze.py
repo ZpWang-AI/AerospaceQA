@@ -50,19 +50,27 @@ class Analyzer:
         
         baike_found = count_file_line(BAIKE_ALL_INFO_FILE_JSONL)
         baike_not_found = count_file_line(BAIKE_NOT_FOUND_FILE_TXT)
+        baike_todo = set(KeywordManager.get_final_keywords()) - \
+                     set([p['keyword']for p in load_data(BAIKE_ALL_INFO_FILE_JSONL)]) - \
+                     set(load_data(BAIKE_NOT_FOUND_FILE_TXT))
+        baike_todo = len(baike_todo)
         
-        zhidao_found = 0
+        zhidao_found_data = set()
         zhidao_cnt = 0
         for keyword, urls in load_data(ZHIDAO_CRAWLED_KEYWORD_FILE_JSON, default={}).items():
-            zhidao_found += 1
-            zhidao_cnt += len(urls)
+            zhidao_found_data.add(keyword)
+            zhidao_cnt += list(urls.values()).count(True)
+        zhidao_found = len(zhidao_found_data)
+        zhidao_todo = set(KeywordManager.get_final_keywords()) - \
+                      set(zhidao_found_data)
+        zhidao_todo = len(zhidao_todo)
         
         keyword_query_done = 0
-        keyword_query_cnt = set()
+        keyword_query_cnt_data = set()
         for k, v in load_data(KEYWORD_QUERY_FILE_JSON, default={}).items():
             keyword_query_done += 1
-            keyword_query_cnt.update(v)
-        keyword_query_cnt = len(keyword_query_cnt)
+            keyword_query_cnt_data.update(v)
+        keyword_query_cnt = len(keyword_query_cnt_data)
         keyword_query_todo = baike_found+zhidao_cnt-keyword_query_done
         
         filter_res = load_data(KEYWORD_FILTER_FILE_JSON, default={})
@@ -71,22 +79,19 @@ class Analyzer:
         keyword_filter_todo = keyword_query_cnt-len(filter_res)
         
         keyword_manual_yes = len(KeywordManager.get_final_keywords())
-        keyword_manual_total = set()
+        keyword_manual_total_data = set()
         for file in os.listdir(KEYWORD_FOLD):
             cur_file = KEYWORD_FOLD/file
             if cur_file.suffix in ['.xlsx', '.xls']:
                 df = pd.read_excel(cur_file)
                 df = df.iloc[:, 0]
-                keyword_manual_total.update(df.tolist())
-        keyword_manual_total = len(keyword_manual_total)
+                keyword_manual_total_data.update(df.tolist())
+        keyword_manual_total = len(keyword_manual_total_data)
         keyword_manual_no = keyword_manual_total-keyword_manual_yes
-        keyword_manual_todo = keyword_filter_yes-keyword_manual_total
+        keyword_manual_todo = set(filter(lambda x:filter_res[x], filter_res.keys())) - \
+                              set(keyword_manual_total_data)
+        keyword_manual_todo = len(KeywordManager.get_manual_todo_keywords())
         
-        baike_todo = set(KeywordManager.get_final_keywords()) - \
-                     set([p['keyword']for p in load_data(BAIKE_ALL_INFO_FILE_JSONL)]) - \
-                     set(load_data(BAIKE_NOT_FOUND_FILE_TXT))
-        baike_todo = len(baike_todo)
-        zhidao_todo = keyword_manual_yes-zhidao_found
         
         final_res = {
             '百度知道':{
