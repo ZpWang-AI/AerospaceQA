@@ -135,7 +135,7 @@ class BaikeSpider():
 
 
 def main_baike():
-    total_keywords = KeywordManager.get_total_keywords()
+    total_keywords = KeywordManager.get_final_keywords()
     baike_spider = BaikeSpider(
         retry_time=3,
         proxy_url=PROXY_URL,

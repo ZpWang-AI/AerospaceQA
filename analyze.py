@@ -70,7 +70,7 @@ class Analyzer:
         keyword_filter_no = len(filter_res)-keyword_filter_yes
         keyword_filter_todo = keyword_query_cnt-len(filter_res)
         
-        keyword_manual_yes = len(KeywordManager.get_total_keywords())
+        keyword_manual_yes = len(KeywordManager.get_final_keywords())
         keyword_manual_total = set()
         for file in os.listdir(KEYWORD_FOLD):
             cur_file = KEYWORD_FOLD/file
@@ -82,7 +82,7 @@ class Analyzer:
         keyword_manual_no = keyword_manual_total-keyword_manual_yes
         keyword_manual_todo = keyword_filter_yes-keyword_manual_total
         
-        baike_todo = set(KeywordManager.get_total_keywords()) - \
+        baike_todo = set(KeywordManager.get_final_keywords()) - \
                      set([p['keyword']for p in load_data(BAIKE_ALL_INFO_FILE_JSONL)]) - \
                      set(load_data(BAIKE_NOT_FOUND_FILE_TXT))
         baike_todo = len(baike_todo)

@@ -16,6 +16,6 @@ if __name__ == '__main__':
     main_filter_new_keywords()
 
     KeywordManager.keyword_excel2txt()
-    KeywordManager.get_new_filter_keywords()
+    KeywordManager.get_manual_todo_keywords()
     
     pass

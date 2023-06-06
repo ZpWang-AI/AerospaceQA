@@ -43,24 +43,7 @@ class ZhidaoCrawlingRecord:
         self._log_dic = load_data(ZHIDAO_CRAWLED_KEYWORD_FILE_JSON, default={})
         self._save_res = save_res
     
-    def log(self, keyword, url, info):
-        if keyword not in self._log_dic:
-            self._log_dic[keyword] = {}
-        self._log_dic[keyword][url] = info if info is True else str(info)
-        if self._save_res:
-            dump_data(ZHIDAO_CRAWLED_KEYWORD_FILE_JSON, self._log_dic, 'w', indent=4)
-    
-    def del_log(self, keyword, url):
-        if keyword in self._log_dic and url in self._log_dic[keyword]:
-            del self._log_dic[keyword][url]
-    
-    def need_searching(self, keyword):
-        if keyword not in self._log_dic:
-            return True
-        
-        cur_record = self._log_dic[keyword]
-        if 'no urls' in cur_record:
-            return True
+
             
 
 class ZhidaoSpider:
@@ -81,7 +64,19 @@ class ZhidaoSpider:
 
         self._spider = BaiduSpider()
         self._normalizer = Normalizer()
-        self._record = ZhidaoCrawlingRecord(save_res)
+        
+        self._record = load_data(ZHIDAO_CRAWLED_KEYWORD_FILE_JSON, default={})
+        
+    def _log(self, keyword, url, info):
+        if keyword not in self._record:
+            self._record[keyword] = {}
+        self._record[keyword][url] = info if type(info) == bool else str(info)
+        if self._save_res:
+            dump_data(ZHIDAO_CRAWLED_KEYWORD_FILE_JSON, self._record, 'w', indent=4)
+    
+    def _del_log(self, keyword, url):
+        if keyword in self._record and url in self._record[keyword]:
+            del self._record[keyword][url]  
         
     def _decode_ans(self, answer):
         answer = answer.encode('iso-8859-1', errors='ignore')
@@ -92,7 +87,7 @@ class ZhidaoSpider:
         urls = set()
         
         def exception_handle_func(err):
-            self._record.log(keyword, 'no urls', f'{type(err)}\n{str(err)}')
+            self._log(keyword, 'no urls', f'{type(err)}\n{str(err)}')
             if type(err) == KeyError:
                 return 5
             if type(err) == requests.exceptions.SSLError and 'Max retries exceeded with url' in str(err):
@@ -111,7 +106,7 @@ class ZhidaoSpider:
             for result in res_lst:
                 urls.add(result['url'])
         if urls:
-            self._record.del_log(keyword, 'no urls')
+            self._del_log(keyword, 'no urls')
         return sorted(urls)
 
     def _crawl_answers(self, keyword, url):
@@ -121,13 +116,13 @@ class ZhidaoSpider:
             proxies=get_proxy(proxy_url=self._proxy_url, return_str=False)
         )
         if response is None:
-            self._record.log(keyword, url, fail_log_prefix+'no response')
+            self._log(keyword, url, fail_log_prefix+'no response')
             return ([]for _ in range(4))
             
         # response.encoding = 'gb1213'
         html = etree.HTML(response.text)
         if html is None:
-            self._record.log(keyword, url, fail_log_prefix+'no html')
+            self._log(keyword, url, fail_log_prefix+'no html')
             return ([]for _ in range(4))
         
         title = html.xpath('//*[@id="wgt-ask"]/h1/span//text()')
@@ -138,7 +133,7 @@ class ZhidaoSpider:
         links = html.xpath('//*[@id="wgt-related"]/div[1]/ul//a/@href')
         
         if not best_answer and not other_answers:
-            self._record.log(keyword, url, fail_log_prefix+'no answer')
+            self._log(keyword, url, fail_log_prefix+'no answer')
             return ([]for _ in range(4))    
 
         return title, best_answer, other_answers, links
@@ -173,17 +168,24 @@ class ZhidaoSpider:
         log_info(start_log)
         
         keyword_list = set(keyword_list)
-        keyword_list = sorted(filter(self._record.need_searching, keyword_list))
+        keyword_list = filter(
+            lambda x:x not in self._record or all(v is True for v in self._record[x].values()),
+            keyword_list,
+        )
+        keyword_list = sorted(keyword_list)
         
         for keyword in tqdm(keyword_list, desc='zhidao'):
-            urls = self._crawl_urls(keyword)
+            if keyword not in self._record or 'no urls' in self._record:
+                urls = self._crawl_urls(keyword)
+            else:
+                urls = [k for k in self._record[keyword].keys() if k is not True]
             if not urls:
                 continue
             
             success_cnt = 0
             for url in tqdm(urls, desc=keyword):
                 def exception_handle_func(err):
-                    self._record.log(keyword, url, fail_log_prefix+f'no {type(err)}\n{str(err)}')
+                    self._log(keyword, url, fail_log_prefix+f'no {type(err)}\n{str(err)}')
                     if type(err) == requests.exceptions.SSLError and 'Max retries exceeded with url' in str(err):
                         return 5
                     if type(err) == requests.exceptions.ProxyError and 'Max retries exceeded with url' in str(err):
@@ -200,7 +202,7 @@ class ZhidaoSpider:
                 )
                 
                 if crawl_res:
-                    self._record.log(keyword, url, True)
+                    self._log(keyword, url, True)
                     success_cnt += 1
 
                 sleep_random_time(self._sleep_time)
@@ -211,7 +213,7 @@ class ZhidaoSpider:
           
        
 def main_zhidao():
-    total_keywords = KeywordManager.get_total_keywords()
+    total_keywords = KeywordManager.get_final_keywords()
     zhidao_spider = ZhidaoSpider(
         page_size=2,
         retry_time=3,

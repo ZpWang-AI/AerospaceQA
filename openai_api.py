@@ -5,7 +5,7 @@ import threading
 import copy
 import requests
 
-from openai.error import RateLimitError, APIError, APIConnectionError
+from openai.error import RateLimitError, APIError, APIConnectionError, Timeout
 
 from openai_apikey import api_key
 from utils import exception_handling
@@ -92,6 +92,8 @@ def get_response_chatcompletion(
         if type(err) == APIError and 'Bad gateway' in str(err):
             return True
         if type(err) == APIError and 'HTTP code 502' in str(err):
+            return True
+        if type(err) == Timeout and 'Max retries exceeded with url' in str(err):
             return True
 
     return exception_handling(

@@ -103,10 +103,10 @@ class KeywordQueryer:
 
 class KeywordFilter:
     def __init__(self,
-                 prompt='''请判断下列词语是否与航天航空领域存在直接或潜在的关系。输出两行，以空格分割。
+                 prompt='''请判断下列词语是否与航天航空领域存在直接或潜在的关系。输出两行，以逗号分割。
 输出格式
-是: xxx xxx xxx
-否: xxx xxx xxx''',
+是: xxx,xxx,xxx
+否: xxx,xxx,xxx''',
                  engine='gpt-3.5-turbo',
                  max_filter_cnt=100, 
                  max_ans_token=2048, 
@@ -133,29 +133,32 @@ class KeywordFilter:
         )
         output_filter = output_filter.split('\n')
         output_res = {}
+        
+        def split_line(line):
+            words = line[2:].split(',')
+            words = map(lambda x:x.strip(), words)
+            words = filter(lambda x:x, words)
+            return list(words)
+        
         for line in output_filter:
             line = line.strip()
             if not line:
                 continue
             if line[0] == '是':
-                output_yes = line.split()[1:]
+                output_yes = split_line(line)
                 for w in output_yes:
-                    if w:
-                        output_res[w] = True
+                    output_res[w] = True
             if line[0] == '否':
-                output_no = line.split()[1:]
+                output_no = split_line(line)
                 for w in output_no:
-                    if w:
-                        output_res[w] = False
+                    output_res[w] = False
         return output_res
 
     def filter_keywords(self):
         record_keyword = load_data(KEYWORD_QUERY_FILE_JSON, default={})
         record_filter = load_data(KEYWORD_FILTER_FILE_JSON, default={})
         
-        total_keyword = []
-        for v in record_keyword.values():
-            total_keyword.extend(v)
+        total_keyword = sum(record_keyword.values(), start=[])
         filtered_keyword = list(record_filter.keys())
         total_keyword = set(total_keyword)
         filtered_keyword = set(filtered_keyword)
@@ -169,13 +172,22 @@ class KeywordFilter:
             cur_keywords = todo_keyword[p:p+self._max_filter_cnt]
             content = '\n'.join(cur_keywords)
             filter_res = self._get_response(content)
-            for k, v in filter_res.items():
-                record_filter[k] = v
+            record_filter.update(filter_res)
             if self._save_keyword:
                 dump_data(KEYWORD_FILTER_FILE_JSON, record_filter, 'w', indent=4)  
 
 
 class KeywordManager:
+    @staticmethod
+    def _clean_keyword(keyword):
+        keyword = str(keyword)
+        keyword = keyword.strip()
+        if keyword[0] in '()（）':
+            keyword = keyword[1:]
+        if keyword[-1] in '()（）':
+            keyword = keyword[:-1]
+        keyword = keyword.strip()
+        return keyword
     
     @staticmethod
     def keyword_excel2txt():
@@ -189,7 +201,7 @@ class KeywordManager:
                 continue
             
             keyword_yes = []
-            for sym in ['是', '1']:
+            for sym in ['是', '1', 1]:
                 df_keyword = pd.read_excel(file_excel)
                 df_keyword = df_keyword.loc[df_keyword.iloc[:, 1]==sym]
                 df_keyword = df_keyword.iloc[:, 0]
@@ -199,7 +211,7 @@ class KeywordManager:
             print(f'keyword from {file_excel} to {file_txt}')
     
     @staticmethod
-    def get_total_keywords():
+    def get_final_keywords():
         all_keywords = []
         for file in os.listdir(KEYWORD_FOLD):
             file = KEYWORD_FOLD/file
@@ -207,36 +219,13 @@ class KeywordManager:
                 continue
             all_keywords.extend(load_data(file))
         return sorted(set(all_keywords))
-    
-    @staticmethod
-    def get_new_keywords():
-        queried_keywords = load_data(KEYWORD_QUERY_FILE_JSON, default={})
-        total_keywords = []
-        for v in queried_keywords.values():
-            total_keywords.extend(v)
-        total_keywords = set(total_keywords)
-        
-        used_keywords = []
-        for file in os.listdir(KEYWORD_FOLD):
-            file = KEYWORD_FOLD/file
-            if file.suffix not in ['.xls', '.xlsx']:
-                continue
-            df_keyword = pd.read_excel(file)
-            used_keywords.extend(df_keyword.iloc[:, 0].tolist())
-        used_keywords = set(used_keywords)
-        
-        new_keywords = total_keywords-used_keywords
-        str_new_keywords = '\n'.join(new_keywords)
-        
-        dump_data('./dataspace/new_keywords.txt', str_new_keywords, 'w')
             
     @staticmethod
-    def get_new_filter_keywords(num=None, to_txt=True):
+    def get_manual_todo_keywords(num=None, to_txt=True):
         filter_res = load_data(KEYWORD_FILTER_FILE_JSON, default={})
-        total_keywords = []
-        for k, v in filter_res.items():
-            if v:
-                total_keywords.append(k)
+        total_keywords = filter_res.keys()
+        total_keywords = filter(lambda x:filter_res[x], total_keywords)
+        total_keywords = map(KeywordManager._clean_keyword, total_keywords)
         total_keywords = set(total_keywords)
         
         used_keywords = []
@@ -246,6 +235,7 @@ class KeywordManager:
                 continue
             df_keyword = pd.read_excel(file)
             used_keywords.extend(df_keyword.iloc[:, 0].tolist())
+        used_keywords = map(KeywordManager._clean_keyword, used_keywords)
         used_keywords = set(used_keywords)
         
         new_keywords = total_keywords-used_keywords
@@ -306,7 +296,7 @@ def main_excel2txt_manual_todo(part_size=(), sheet_names=()):
         sheet_names = range(1, len(part_size)+1)
     assert len(part_size) == len(sheet_names)
     
-    manual_todo = KeywordManager.get_new_filter_keywords(sum(part_size), to_txt=False)
+    manual_todo = KeywordManager.get_manual_todo_keywords(sum(part_size), to_txt=False)
     excel_file = path(f'./dataspace/data_keyword_{str(datetime.date.today())}.xlsx')
     if excel_file.exists():
         os.remove(excel_file)
@@ -315,7 +305,7 @@ def main_excel2txt_manual_todo(part_size=(), sheet_names=()):
     for p, (size, sheet_name) in enumerate(zip(part_size, sheet_names)):
         df = pd.DataFrame(manual_todo[needle:needle+size])
         needle += size
-        with pd.ExcelWriter(excel_file, mode=('a'if p else 'w'))as f:
+        with pd.ExcelWriter(excel_file, mode=('a' if p else 'w'))as f:
             df.to_excel(f, sheet_name=str(sheet_name), index=False, header=False)
 
     
@@ -329,8 +319,7 @@ if __name__ == '__main__':
     # kf.filter_keywords
     
     # KeywordManager.keyword_excel2txt()
-    # KeywordManager.get_new_keywords()
-    # KeywordManager.get_new_filter_keywords()
+    # KeywordManager.get_manual_todo_keywords()
     
     # all_keywords = KeywordManager.get_all_keywords()
     # print(len(all_keywords))
