@@ -187,10 +187,14 @@ class KeywordManager:
             file_txt = file.with_suffix('.txt')
             if file_txt.exists():
                 continue
-            df_keyword = pd.read_excel(file_excel)
-            df_keyword = df_keyword.loc[df_keyword.iloc[:, 1]=='是']
-            df_keyword = df_keyword.iloc[:, 0]
-            str_keyword = '\n'.join(df_keyword.tolist())
+            
+            keyword_yes = []
+            for sym in ['是', '1']:
+                df_keyword = pd.read_excel(file_excel)
+                df_keyword = df_keyword.loc[df_keyword.iloc[:, 1]==sym]
+                df_keyword = df_keyword.iloc[:, 0]
+                keyword_yes.extend(df_keyword.tolist())
+            str_keyword = '\n'.join(map(str, keyword_yes))
             dump_data(file_txt, str_keyword, 'w')
             print(f'keyword from {file_excel} to {file_txt}')
     
@@ -246,7 +250,7 @@ class KeywordManager:
         
         new_keywords = total_keywords-used_keywords
         new_keywords = sorted(new_keywords)
-        print(f'\nget new filtered keywords {len(new_keywords)}\n')
+        print(f'\ntodo manual filter keywords {len(new_keywords)}\n')
         
         if num is not None:
             new_keywords = new_keywords[:num]
@@ -254,6 +258,8 @@ class KeywordManager:
         if to_txt:
             str_new_keywords = '\n'.join(new_keywords)
             dump_data('./dataspace/new_filtered_keywords.txt', str_new_keywords, 'w')
+            
+        return new_keywords
             
 
 def main_query_new_keywords():
@@ -288,8 +294,33 @@ def main_filter_new_keywords():
     filter_ = KeywordFilter()
     filter_.filter_keywords()
     
+    
+def main_excel2txt_manual_todo(part_size=(), sheet_names=()):
+    KeywordManager.keyword_excel2txt()
+    print('excel to txt done\n')
+    
+    if not part_size:
+        print('no split')
+        return
+    if not sheet_names:
+        sheet_names = range(1, len(part_size)+1)
+    assert len(part_size) == len(sheet_names)
+    
+    manual_todo = KeywordManager.get_new_filter_keywords(sum(part_size), to_txt=False)
+    excel_file = path(f'./dataspace/data_keyword_{str(datetime.date.today())}.xlsx')
+    if excel_file.exists():
+        os.remove(excel_file)
+    
+    needle = 0
+    for p, (size, sheet_name) in enumerate(zip(part_size, sheet_names)):
+        df = pd.DataFrame(manual_todo[needle:needle+size])
+        needle += size
+        with pd.ExcelWriter(excel_file, mode=('a'if p else 'w'))as f:
+            df.to_excel(f, sheet_name=str(sheet_name), index=False, header=False)
 
+    
 if __name__ == '__main__':
+    main_excel2txt_manual_todo([2000]*3)
     # sentence = '''看我的收藏0有用+1已投票0轨道器播报编辑锁定讨论上传视频特型编辑太空拖船轨道器是指往来于航天站与空间基地之间的载人或无人飞船。它的主要用途是更换、修理航天站上的仪器设备。补给消耗品，从航天站取回资料和空间加工的产品等。由于它专门来往于各个空间站，又被称为“太空拖船”。中文名轨道器别名太空拖船往返航天站与空间基地用途更换、修理航天站上的仪器设备相关视频查看全部轨道飞行器分为两种。一种是活动范围较小的，叫做轨道机动飞行器；另一种是在大范围内实行轨道转移的，成为轨道转移飞行器。可以搭载七名宇航员在太空至少逗留10天。机舱内有三层甲板：飞行甲板、中甲板和设有生命支持系统的底层甲板。轨道飞行器长37.24米，高17.27米，翼展29.79米，载荷舱尺寸18.3*4.6米，轨道速度每小时28800公里，可容忍温度1500摄氏度，轨道高度185公里至1000公里，持续时间10至16天。词条图册更多图册'''
     # kq = KeywordQueryer(save_keyword=False)
     # print(kq.get_new_keywords(['123'], [sentence]))

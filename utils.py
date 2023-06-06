@@ -65,6 +65,8 @@ def exception_handling(
             return result
             # ====================
         except BaseException as err:
+            if type(err) == KeyboardInterrupt:
+                raise 'exit'
             handled_return = exception_handle_func(err)
             if handled_return is not None:
                 if type(handled_return) == int:
