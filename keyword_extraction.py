@@ -21,6 +21,26 @@ from settings import (KEYWORD_FOLD,
 openai.api_key = api_key
 
 sentence_sep = '。？！.?!．'
+keyword_query_prompt = '''请从文章中抽取出所有的航空航天领域科学技术术语，以列表形式给出。
+输出格式
+- xxx
+- xxx
+'''.strip()
+# keyword_filter_prompt = '''请判断下列词语是否与航天航空领域存在直接或潜在的关系。输出两行，以逗号分割。
+# 输出格式
+# 是: xxx,xxx,xxx
+# 否: xxx,xxx,xxx
+# '''.strip()
+# keyword_filter_prompt = '''请判断下列词语是否与航天航空领域存在直接关系。输出两行，以逗号分割。
+# 输出格式
+# 是: xxx,xxx,xxx
+# 否: xxx,xxx,xxx
+# '''.strip()
+keyword_filter_prompt = '''请判断下列词语是否属于航天航空领域。输出两行，以逗号分割。
+输出格式
+是: xxx,xxx,xxx
+否: xxx,xxx,xxx
+'''.strip()
 
 
 class KeywordQueryer:
@@ -170,22 +190,20 @@ class KeywordFilter:
                 cur_content += '\n'+k
         yield cur_content
         
-    def filter_keywords(self):
-        record_keyword = load_data(KEYWORD_QUERY_FILE_JSON, default={})
+    def filter_keywords(self, todo_keywords, deduplication=True):
+        todo_keywords = set(todo_keywords)
         record_filter = load_data(KEYWORD_FILTER_FILE_JSON, default={})
         
-        total_keyword = sum(record_keyword.values(), start=[])
-        filtered_keyword = list(record_filter.keys())
-        total_keyword = set(total_keyword)
-        filtered_keyword = set(filtered_keyword)
-        
-        todo_keyword = sorted(total_keyword-filtered_keyword)
-        
-        print(f'\ntotal:{len(total_keyword)}, filtered:{len(filtered_keyword)}, todo:{len(todo_keyword)}')
-            
+        if deduplication:
+            filtered_keyword = list(record_filter.keys())
+            filtered_keyword = set(filtered_keyword)
+            todo_keywords -= filtered_keyword
+                
+        todo_keywords = sorted(todo_keywords)
+
         print('\n=== openai processing ===\n')
-        for p in tqdm(list(range(0, len(todo_keyword), self._max_filter_cnt)), desc='filter keywords'):
-            cur_keywords = todo_keyword[p:p+self._max_filter_cnt]
+        for p in tqdm(list(range(0, len(todo_keywords), self._max_filter_cnt)), desc='filter keywords'):
+            cur_keywords = todo_keywords[p:p+self._max_filter_cnt]
             for content in self._clip_content(cur_keywords):
                 filter_res = self._get_response(content)
                 record_filter.update(filter_res)
@@ -269,7 +287,9 @@ class KeywordManager:
 
 def main_query_new_keywords():
     queried_keywords = load_data(KEYWORD_QUERY_FILE_JSON, default={})
-    keyword_queryer = KeywordQueryer()
+    keyword_queryer = KeywordQueryer(
+        prompt=keyword_query_prompt,
+    )
     
     baike_urls = []
     baike_passage = []
@@ -296,7 +316,9 @@ def main_query_new_keywords():
 
 
 def main_filter_new_keywords():
-    filter_ = KeywordFilter()
+    filter_ = KeywordFilter(
+        prompt=keyword_filter_prompt,
+    )
     filter_.filter_keywords()
     
     

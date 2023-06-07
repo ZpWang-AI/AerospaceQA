@@ -209,10 +209,10 @@ class ZhidaoSpider:
             if success_cnt:
                 log_info(f'\n{keyword} success, {success_cnt} crawled\n')
             else:
-                fail_keyword_cnt += 1
-                if fail_keyword_cnt >= 3:
-                    print('\n too many failure, no more crawling')
-                    return
+                log_info('\n fail crawling, waiting...')
+                # TODO: wait when IP is banned
+                time.sleep(60*60)
+                log_info(' restart\n')
             sleep_random_time(self._sleep_time)
           
        
