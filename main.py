@@ -3,7 +3,7 @@ from zhidao_spider import main_zhidao
 
 from keyword_extraction import (main_query_new_keywords, 
                                 main_filter_new_keywords,
-                                KeywordManager,
+                                main_excel2txt_manual_todo,
                                 )
 
 
@@ -15,7 +15,6 @@ if __name__ == '__main__':
     main_query_new_keywords()
     main_filter_new_keywords()
 
-    KeywordManager.keyword_excel2txt()
-    KeywordManager.get_manual_todo_keywords()
+    main_excel2txt_manual_todo([2000]*3)
     
     pass

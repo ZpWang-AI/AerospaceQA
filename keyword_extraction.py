@@ -14,6 +14,7 @@ from collections import OrderedDict
 from data_utils import load_data, dump_data
 from openai_api import get_response_chatcompletion
 from openai_apikey import api_key
+from data_manager import DataManager
 from settings import (KEYWORD_FOLD,
                       KEYWORD_QUERY_FILE_JSON,
                       KEYWORD_FILTER_FILE_JSON)
@@ -22,9 +23,10 @@ openai.api_key = api_key
 
 sentence_sep = '。？！.?!．'
 keyword_query_prompt = '''请从文章中抽取出所有的航空航天领域科学技术术语，以列表形式给出。
-输出格式
+输出格式：
 - xxx
 - xxx
+文章：
 '''.strip()
 # keyword_filter_prompt = '''请判断下列词语是否与航天航空领域存在直接或潜在的关系。输出两行，以逗号分割。
 # 输出格式
@@ -37,21 +39,23 @@ keyword_query_prompt = '''请从文章中抽取出所有的航空航天领域科
 # 否: xxx,xxx,xxx
 # '''.strip()
 keyword_filter_prompt = '''请判断下列词语是否属于航天航空领域。输出两行，以逗号分割。
-输出格式
+输出格式：
 是: xxx,xxx,xxx
 否: xxx,xxx,xxx
+词语：
 '''.strip()
 
 
 class KeywordQueryer:
     def __init__(self, 
-                 prompt="请从文章中抽取出所有的航空航天领域科学技术术语，以列表形式给出。\n输出格式\n- xxx\n- xxx",
+                 prompt,
                  engine='gpt-3.5-turbo',
                  max_query_len=1000, 
                  max_ans_token=2048, 
                  retry_time=3,
                  save_keyword=True,
                  ) -> None:
+        print(f'prompt\n{prompt}')
         self._prompt = prompt
         self._engine = engine
         self._max_query_len = max_query_len
@@ -61,7 +65,7 @@ class KeywordQueryer:
     
     def _get_response(self, content):
         message_list = [
-            {'role': 'user', 'content': f'{self._prompt}\n 文章：{content}'},
+            {'role': 'user', 'content': f'{self._prompt}\n{content}'},
         ]
         
         output_keyword = get_response_chatcompletion(
@@ -123,17 +127,15 @@ class KeywordQueryer:
 
 class KeywordFilter:
     def __init__(self,
-                 prompt='''请判断下列词语是否与航天航空领域存在直接或潜在的关系。输出两行，以逗号分割。
-输出格式
-是: xxx,xxx,xxx
-否: xxx,xxx,xxx''',
+                 prompt,
                  engine='gpt-3.5-turbo',
                  max_filter_cnt=100, 
                  max_query_len=None,
                  max_ans_token=2048, 
                  retry_time=3,
                  save_keyword=True,
-                 ) -> None:
+                 ) -> None:    
+        print(f'prompt\n{prompt}')
         self._prompt = prompt
         self._engine = engine
         self._max_filter_cnt = max_filter_cnt
@@ -145,7 +147,7 @@ class KeywordFilter:
     
     def _get_response(self, content):
         message_list = [
-            {'role': 'user', 'content': f'{self._prompt}\n 词语：\n{content}'},
+            {'role': 'user', 'content': f'{self._prompt}\n{content}'},
         ]
         
         output_filter = get_response_chatcompletion(
@@ -190,16 +192,10 @@ class KeywordFilter:
                 cur_content += '\n'+k
         yield cur_content
         
-    def filter_keywords(self, todo_keywords, deduplication=True):
-        todo_keywords = set(todo_keywords)
+    def filter_keywords(self, todo_keywords, deduplicate=False):
         record_filter = load_data(KEYWORD_FILTER_FILE_JSON, default={})
-        
-        if deduplication:
-            filtered_keyword = list(record_filter.keys())
-            filtered_keyword = set(filtered_keyword)
-            todo_keywords -= filtered_keyword
-                
-        todo_keywords = sorted(todo_keywords)
+        if deduplicate:
+            todo_keywords = sorted(set(todo_keywords))
 
         print('\n=== openai processing ===\n')
         for p in tqdm(list(range(0, len(todo_keywords), self._max_filter_cnt)), desc='filter keywords'):
@@ -212,16 +208,6 @@ class KeywordFilter:
 
 
 class KeywordManager:
-    @staticmethod
-    def _clean_keyword(keyword):
-        keyword = str(keyword)
-        keyword = keyword.strip()
-        if keyword[0] in '()（）':
-            keyword = keyword[1:]
-        if keyword[-1] in '()（）':
-            keyword = keyword[:-1]
-        keyword = keyword.strip()
-        return keyword
     
     @staticmethod
     def keyword_excel2txt():
@@ -246,43 +232,7 @@ class KeywordManager:
     
     @staticmethod
     def get_final_keywords():
-        all_keywords = []
-        for file in os.listdir(KEYWORD_FOLD):
-            file = KEYWORD_FOLD/file
-            if file.suffix != '.txt':
-                continue
-            all_keywords.extend(load_data(file))
-        return sorted(set(all_keywords))
-            
-    @staticmethod
-    def get_manual_todo_keywords(num=None, to_txt=True):
-        filter_res = load_data(KEYWORD_FILTER_FILE_JSON, default={})
-        total_keywords = filter_res.keys()
-        total_keywords = filter(lambda x:filter_res[x], total_keywords)
-        total_keywords = map(KeywordManager._clean_keyword, total_keywords)
-        total_keywords = set(total_keywords)
-        
-        used_keywords = []
-        for file in os.listdir(KEYWORD_FOLD):
-            file = KEYWORD_FOLD/file
-            if file.suffix not in ['.xls', '.xlsx']:
-                continue
-            df_keyword = pd.read_excel(file)
-            used_keywords.extend(df_keyword.iloc[:, 0].tolist())
-        used_keywords = map(KeywordManager._clean_keyword, used_keywords)
-        used_keywords = set(used_keywords)
-        
-        new_keywords = total_keywords-used_keywords
-        new_keywords = sorted(new_keywords)
-        
-        if num is not None:
-            new_keywords = new_keywords[:num]
-        
-        if to_txt:
-            str_new_keywords = '\n'.join(new_keywords)
-            dump_data('./dataspace/new_filtered_keywords.txt', str_new_keywords, 'w')
-            
-        return new_keywords
+        return DataManager.keyword_final()
             
 
 def main_query_new_keywords():
@@ -316,10 +266,11 @@ def main_query_new_keywords():
 
 
 def main_filter_new_keywords():
+    filter_todo = DataManager.keyword_filter_k_todo()
     filter_ = KeywordFilter(
         prompt=keyword_filter_prompt,
     )
-    filter_.filter_keywords()
+    filter_.filter_keywords(filter_todo)
     
     
 def main_excel2txt_manual_todo(part_size=(), sheet_names=()):
@@ -333,7 +284,7 @@ def main_excel2txt_manual_todo(part_size=(), sheet_names=()):
         sheet_names = range(1, len(part_size)+1)
     assert len(part_size) == len(sheet_names)
     
-    manual_todo = KeywordManager.get_manual_todo_keywords(sum(part_size), to_txt=False)
+    manual_todo = DataManager.keyword_manual_k_todo()[:sum(part_size)]
     excel_file = path(f'./dataspace/data_keyword_{str(datetime.date.today())}.xlsx')
     if excel_file.exists():
         os.remove(excel_file)
@@ -357,7 +308,6 @@ if __name__ == '__main__':
     # kf.filter_keywords
     
     # KeywordManager.keyword_excel2txt()
-    # KeywordManager.get_manual_todo_keywords()
     
     # all_keywords = KeywordManager.get_all_keywords()
     # print(len(all_keywords))
