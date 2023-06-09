@@ -137,6 +137,7 @@ def get_response_chatcompletion_multithread(
     cnt = len(message_list)
     response_list = ['']*cnt
     running_thread = [0]
+    thread_list = []
     
     def thread_func(pid):
         running_thread[0] += 1
@@ -160,7 +161,10 @@ def get_response_chatcompletion_multithread(
     for pid in range(cnt):
         t = threading.Thread(target=thread_func, args=(pid,))
         if running_thread[0] < max_thread_cnt:
+            thread_list.append(t)
             t.start()
+    for t in thread_list:
+        t.join()
     return response_list
 
 

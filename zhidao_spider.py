@@ -14,6 +14,7 @@ from tqdm import tqdm
 from lxml import etree
 from collections import OrderedDict
 from baiduspider import BaiduSpider
+from fake_useragent import UserAgent
 
 from utils import sleep_random_time, get_cur_time, exception_handling
 from proxy_utils import get_proxy
@@ -27,7 +28,7 @@ from settings import (ZHIDAO_ALL_INFO_FILE_JSONL,
                       PROXY_URL,
                       )
 
-headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
+# headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
 # headers = None
 
 fail_crawl_urls = 'no urls'
@@ -58,6 +59,7 @@ class ZhidaoSpider:
 
         self._spider = BaiduSpider()
         self._normalizer = Normalizer()
+        self._user_agent = UserAgent()
         
         self._record = load_data(ZHIDAO_CRAWLED_KEYWORD_FILE_JSON, default={})
         
@@ -106,7 +108,7 @@ class ZhidaoSpider:
     def _crawl_answers(self, keyword, url):
         response = requests.get(
             url, 
-            headers=headers, 
+            headers={'User-Agent':self._user_agent.random}, 
             proxies=get_proxy(proxy_url=self._proxy_url, return_str=False)
         )
         if response is None:
@@ -168,7 +170,7 @@ class ZhidaoSpider:
         )
         keyword_list = sorted(keyword_list)
         
-        fail_keyword_cnt = 0
+        fail_cnt = 0
         for keyword in tqdm(keyword_list, desc='zhidao'):
             if keyword not in self._record or fail_crawl_urls in self._record[keyword]:
                 urls = self._crawl_urls(keyword)
@@ -204,22 +206,26 @@ class ZhidaoSpider:
                 if crawl_res:
                     self._log(keyword, url, True)
                     success_cnt += 1
+                else:
+                    fail_cnt += 1
+                    if fail_cnt >= 5:
+                        log_info('\n fail crawling, waiting...')
+                        # TODO: wait when IP is banned
+                        time.sleep(60*30)
+                        log_info(' restart\n')
+                        fail_cnt = 0
+                        
                 sleep_random_time(self._sleep_time)
             
             if success_cnt:
                 log_info(f'\n{keyword} success, {success_cnt} crawled\n')
-            else:
-                log_info('\n fail crawling, waiting...')
-                # TODO: wait when IP is banned
-                time.sleep(60*60)
-                log_info(' restart\n')
             sleep_random_time(self._sleep_time)
           
        
 def main_zhidao():
     total_keywords = KeywordManager.get_final_keywords()
     zhidao_spider = ZhidaoSpider(
-        page_size=2,
+        page_size=1,
         retry_time=3,
         proxy_url=PROXY_URL,
         sleep_time=2.5,

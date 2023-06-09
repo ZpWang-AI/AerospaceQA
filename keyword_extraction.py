@@ -22,10 +22,22 @@ from settings import (KEYWORD_FOLD,
 openai.api_key = api_key
 
 sentence_sep = '。？！.?!．'
-keyword_query_prompt = '''请从文章中抽取出所有的航空航天领域科学技术术语，以列表形式给出。
+# keyword_query_prompt = '''请从文章中抽取出所有的航空航天领域科学技术术语，以列表形式给出。
+# 输出格式：
+# - xxx
+# - xxx
+# 文章：
+# '''.strip()
+keyword_query_prompt = '''
+请从文章中抽取出所有的航空航天领域的科学技术术语，以列表形式给出。
 输出格式：
 - xxx
 - xxx
+样例：
+- 涡轮喷气式发动机
+- 超低空飞行
+- 神舟十二号载人飞船
+- 近地卫星导航系统
 文章：
 '''.strip()
 # keyword_filter_prompt = '''请判断下列词语是否与航天航空领域存在直接或潜在的关系。输出两行，以逗号分割。
@@ -182,7 +194,8 @@ class KeywordFilter:
     def _clip_content(self, keywords):
         content = '\n'.join(keywords)
         if len(content) <= self._max_query_len:
-            return content
+            yield content
+            return
         cur_content = ''
         for k in keywords:
             if len(cur_content+'\n'+k) > self._max_query_len:

@@ -186,8 +186,9 @@ keyword
         for file in os.listdir(KEYWORD_FOLD):
             file = KEYWORD_FOLD/file
             if file.suffix in ['.xls', '.xlsx']:
-                df_keyword = pd.read_excel(file)
-                k_done.extend(df_keyword.iloc[:, 0].tolist())
+                df_keyword = pd.read_excel(file, header=None)
+                df_keyword = df_keyword.iloc[:, 0].tolist()
+                k_done.extend(df_keyword)
         return k_done
                
     @_decorator_custom
@@ -280,4 +281,5 @@ if __name__ == '__main__':
     # sample = DataManager.keyword_filter_k_yes()
     # print(sample)
     # print(len(sample))
+    # DataManager.keyword_manual_k_todo()
     DataManager.analyse_progress()
