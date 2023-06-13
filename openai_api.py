@@ -86,6 +86,8 @@ def get_response_chatcompletion(
     
     def exception_handle_func(err):
         if type(err) == RateLimitError:
+            if 'please check your plan and billing details' in str(err):
+                raise 'No more money !!!'
             return True
         if type(err) == APIConnectionError and 'Max retries exceeded with url' in str(err):
             return 5

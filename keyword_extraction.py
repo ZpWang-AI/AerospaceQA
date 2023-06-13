@@ -250,10 +250,12 @@ class KeywordManager:
 
 def main_query_new_keywords():
     queried_keywords = load_data(KEYWORD_QUERY_FILE_JSON, default={})
-    keyword_queryer = KeywordQueryer(
-        prompt=keyword_query_prompt,
-    )
-    
+    keyword_queryer = KeywordQueryer(prompt=keyword_query_prompt)
+    for k in queried_keywords:
+        if not queried_keywords[k]:
+            del queried_keywords[k]
+    dump_data(KEYWORD_QUERY_FILE_JSON, queried_keywords, mode='w', indent=4)
+        
     baike_urls = []
     baike_passage = []
     with open('./dataspace/baike.all_crawled_info.jsonl', 'r', encoding='utf-8')as f:
