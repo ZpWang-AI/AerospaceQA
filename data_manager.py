@@ -1,6 +1,9 @@
 import os
 import json
 import pandas as pd
+import datetime
+
+from pathlib import Path as path
 
 from data_utils import load_data, dump_data
 from settings import (BAIKE_ALL_INFO_FILE_JSONL,
@@ -35,10 +38,8 @@ class KeywordProcesser:
     def _clean_func(keyword):
         keyword = str(keyword)
         keyword = keyword.strip()
-        if keyword[0] in '()（）':
-            keyword = keyword[1:]
-        if keyword[-1] in '()（）':
-            keyword = keyword[:-1]
+        for sym in '()（）,.，。':
+            keyword = keyword.strip(sym)
         keyword = keyword.strip()
         return keyword
     
@@ -50,6 +51,9 @@ class KeywordProcesser:
         except:
             pass
         
+        if sum(keyword.count(sym) for sym in ',，') >= 3:
+            return False
+        
         return True
 
     @staticmethod
@@ -58,6 +62,44 @@ class KeywordProcesser:
         keywords = filter(KeywordProcesser._filter_func, keywords)
         return set(keywords)
 
+
+# class DataManager:
+#     baike_info_jsonl = 'baike.info.jsonl'
+#     baike_found_jsonl = 'baike.found.jsonl'
+#     baike_not_found_jsonl = 'baike.not_found.jsonl'
+    
+#     zhidao_info_jsonl = 'zhidao.info.jsonl'
+#     zhidao_found_jsonl = 'zhidao.found.jsonl'
+#     zhidao_not_found_jsonl = 'zhidao.not_found.jsonl'
+    
+#     def __init__(self, proxy_pool_url='') -> None:
+#         now = datetime.datetime.now()
+#         self._data_fold = path(f'./dataspace/data_{now.year}-{now.month}-{now.day}')
+        
+#         self._baike_info_jsonl = self._data_fold/
+#         self._ = self._data_fold/
+#         self._ = self._data_fold/
+#         self._baike_log_txt = path('./dataspace/baike.log.txt')
+#         self._baike_error_txt = path('./dataspace/baike.error.txt')
+        
+#         self._ = self._data_fold/
+#         self._ = self._data_fold/
+#         self._ = self._data_fold/
+#         self._zhidao_log_txt = path('./dataspace/zhidao.log.txt')
+#         self._zhidao_error_txt = path('./dataspace/zhidao.error.txt')
+        
+#         # https://api.xiaoxiangdaili.com/ip/get?appKey=981028115805786112&appSecret=VwrmCHtQ&cnt=&wt=text
+#         self._proxy_pool_url = proxy_pool_url.strip()
+        
+#         self._keyword_fold = path('./dataspace/keywords/')
+#         self._keyword_query_jsonl = self._data_fold/'keyword.query.jsonl'
+#         self._keyword_filter_jsonl = self._data_fold/'keyword.filter.jsonl'
+        
+#         self._openai_error_txt = path('./dataspace/openai.error.txt')
+#         self._openai_token_jsonl = path('./dataspace/openai.tokens.jsonl')
+        
+#     def baike_
+        
 
 class DataManager:
     '''
@@ -96,7 +138,7 @@ keyword
                 keyword_final.extend(load_data(file))
         return keyword_final
     
-    # ============================
+    # ============================ baike
     @_decorator_custom
     def baike_k_found():
         return map(lambda x:x['keyword'], load_data(BAIKE_CRAWLED_FILE_JSONL, []))
@@ -116,7 +158,7 @@ keyword
         k_not_found = DataManager.baike_k_not_found(True)
         return k_total-k_found-k_not_found
         
-    # ============================
+    # ============================ zhidao
     @_decorator_custom
     def zhidao_k_found():
         crawled_record = load_data(ZHIDAO_CRAWLED_KEYWORD_FILE_JSON, {})
@@ -143,7 +185,7 @@ keyword
         return sum(u_found, [])
      
      
-    # ============================
+    # ============================ keyword query
     @_decorator_custom
     def keyword_query_u_done():
         return load_data(KEYWORD_QUERY_FILE_JSON, {}).keys()
@@ -159,7 +201,7 @@ keyword
     def keyword_query_k_found():
         return sum(load_data(KEYWORD_QUERY_FILE_JSON, {}).values(), [])
      
-    # ============================
+    # ============================ keyword filter
     @_decorator_custom
     def keyword_filter_k_done():
         return load_data(KEYWORD_FILTER_FILE_JSON, {}).keys()
@@ -179,7 +221,7 @@ keyword
         return DataManager.keyword_query_k_found(True) - \
                DataManager.keyword_filter_k_done(True)
                
-    # ============================
+    # ============================ keyword manual
     @_decorator_custom
     def keyword_manual_k_done():
         k_done = []
@@ -206,6 +248,39 @@ keyword
         manual_k_done = KeywordProcesser.process_func(DataManager.keyword_manual_k_done(True))
         return filter_k_yes-manual_k_done
     
+    # ============================ key point
+    @_decorator_custom
+    def keypoint_total_message():
+        baike_u_found = DataManager.baike_u_found(True)
+        zhidao_u_found = DataManager.zhidao_u_found(True)
+        return baike_u_found | zhidao_u_found
+    
+    def keypoint_total_keywords(*args, **kwargs):
+        return DataManager.keyword_manual_k_done(*args, **kwargs)
+    
+    # ============================ 
+    @staticmethod
+    def deduplicate_info(info_file):
+        contents = load_data(info_file, ())
+        init_len = len(contents)
+        new_contents = []
+        urls = set()
+        for p in contents:
+            if not p:
+                continue
+            if p['url'] not in urls:
+                urls.add(p['url'])
+                new_contents.append(p)
+        os.remove(info_file)
+        print(f'deduplicate {info_file}, init {init_len}, rest {len(urls)}')
+        for p in new_contents:
+            dump_data(info_file, p, mode='a')
+        print('done')
+        
+    @staticmethod
+    def clean_empty_baike_info():
+        pass
+            
     # ============================
     @staticmethod
     def analyse_progress():
@@ -241,6 +316,12 @@ keyword
                     '待筛选':DataManager.keyword_manual_k_todo,
                 },
             },
+            '重点':{
+                '重点':{
+                    '文章数量':DataManager.keypoint_total_message,
+                    '人工审核关键词数量':DataManager.keypoint_total_keywords,
+                }
+            }
         }
         
         def print_line(*args):
@@ -282,4 +363,7 @@ if __name__ == '__main__':
     # print(sample)
     # print(len(sample))
     # DataManager.keyword_manual_k_todo()
+    
+    # DataManager.deduplicate_info(BAIKE_ALL_INFO_FILE_JSONL)
+    # DataManager.deduplicate_info(ZHIDAO_ALL_INFO_FILE_JSONL)
     DataManager.analyse_progress()
