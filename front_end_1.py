@@ -37,10 +37,15 @@ def mrc_answer(model_name, query:str, passage:str) -> str:
     return:
         answer(str)
     """
-    return query+passage
-    target_url = ''  # TODO
-    url = target_url+query+'@@&&@@'+passage
-    data = requests.get(url).text
+    # return query+passage
+    # jsondata = json.dumps({"question": query, "context": passage})
+    target_url = 'http://127.0.0.1:8081/mrc?question=' +query + '&context='+passage
+    # target_url = 'http://127.0.0.1:8081/mrc'
+    # url = target_url+query+'@@&&@@'+passage
+    data = requests.post(target_url).text
+    # data = requests.post(target_url, data=json.dumps({"question": query, "context": passage}, ensure_ascii=False)).text
+    data = eval(data)
+    data = data["output"]
     return data
 
 
