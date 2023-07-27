@@ -19,7 +19,7 @@ def retrieve_passage(query:str) -> str:
     # datas = requests.get(url).text
     # datas = json.loads(datas)["data"]
     # return datas[0]['data']['content'] if datas else '无相关信息'
-    
+    return '...'
     target_url = 'http://106.15.232.22:8778/search?query='
     url = target_url+query
     datas = requests.get(url).text
@@ -77,9 +77,9 @@ def main_front_end():
             entity = ner_query(message)
             answer = mrc_answer(None, message, passage)
             
-            passage = '相关信息\n'+passage
-            entity = '实体替换\n'+', '.join(map(lambda x: f'{x[0]}: {x[1]}', entity.items()))
-            answer = '回答\n'+answer
+            passage = '相关信息\n\n'+passage
+            entity = '实体替换\n\n'+', '.join(map(lambda x: f'{x[0]}: {x[1]}', entity.items()))
+            answer = '回答\n\n'+answer
             chat_history.extend([
                 (message, passage),
                 (None, entity),
