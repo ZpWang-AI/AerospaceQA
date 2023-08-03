@@ -1,10 +1,15 @@
-import gradio as gr
 import json
-import pandas as pd
 import requests
+import cv2
+import os
+import gradio as gr
+import pandas as pd
+
+from gradio.themes.base import Base
+from gradio.themes.utils import colors, fonts, sizes
 from typing import *
 
-# from utils import split_p2s
+from utils import split_p2s
 
 '''
 多线程
@@ -16,6 +21,8 @@ LOGO
 改为英文
 
 '''
+
+LOGO_FILEPATH = 'file/FrontEnd/2.png'  # 'file/' + 相对路径
 
 
 class ServerAPI:
@@ -131,28 +138,49 @@ class ServerAPI:
         return '\n'.join([query, mrc_answer, abstract])
 
 
+class FrontEndTheme(Base):
+    def __init__(self):
+        super().__init__(
+            # primary_hue=colors.blue,
+            # secondary_hue=colors.blue,
+            neutral_hue=colors.blue,
+        )
+        super().set(
+            button_primary_background_fill_hover='*neutral_50',
+            button_secondary_background_fill_hover='*neutral_50',
+            button_cancel_background_fill_hover='*neutral_50',
+        )
+
+
 def main_front_end():
     with gr.Blocks() as demo:
-        gr.Markdown('''<div align='center' ><font size='70'>航空航天问答系统</font></div>''')
+        # gr.Markdown('''<div align='center' ><font size='70'>航空航天问答系统</font></div>''')
+        logo_width = 400
+        logo_md = f'''
+        <div  align="center">
+        <img src="{LOGO_FILEPATH}" width = "{logo_width}" height = "{logo_width//5}" alt="图片名称" align=center />
+        </div>
+        '''
+        gr.Markdown(value=logo_md)
         
         with gr.Row():
             with gr.Column():
-                chatbot = gr.Chatbot(label='Chatting Thread').style(height=600)
+                chatbot = gr.Chatbot(label='Chatting Thread', height=595)
                 msg = gr.Textbox(placeholder='Press ENTER for chatting', label='Question \ Requirement')
                 with gr.Row():
                     undo_button = gr.Button(value='Withdraw')
-                    clear_button = gr.Button(value='Clear')
+                    clear_button = gr.Button(value=' Clear ')
                     
             with gr.Column():
-                # ner&linking, retrieve, mrc
                 with gr.Accordion('PreProcessing (NER and Entity Linking)', open=True):
-                    ner = gr.outputs.Dataframe(headers=['Named Entity'], type='pandas')
+                    ner = gr.Dataframe(headers=['Named Entity'], type='pandas')
                 with gr.Accordion('Retriever', open=True):
                     retrieve_components = []
                     for p in range(1, 6):
                         with gr.Tab(f'Top-{p} PF'):
-                            con = gr.Textbox(show_label=False, container=False, lines=8, max_lines=8)
-                        retrieve_components.append(con)
+                            con = gr.HTML(show_label=False)
+                            con = gr.Textbox(show_label=False, container=False, lines=10, max_lines=10)
+                            retrieve_components.append(con)
                 with gr.Accordion('Extractive MRC', open=True):
                     mrc_textbox = gr.HighlightedText(
                         # value=[' ', None],
@@ -161,11 +189,11 @@ def main_front_end():
                         # container=False,
                         # show_legend=True,
                         # show_label=False,
+                        color_map={'Answer': 'green', 'Answer is not in the passages': 'yellow'},
+                        scale=5,
+                        # visible=False,
                     )
-                    mrc_textbox.style(color_map={
-                        'Answer': 'green',
-                    })
-                    mrc_textbox.value = []
+                    mrc_textbox.value = [('\n', None)]
                 with gr.Accordion('对话历史摘要', open=True, visible=False):
                     qa_abstract = gr.Textbox(show_label=False, value=' ', container=False)
     
@@ -181,7 +209,7 @@ def main_front_end():
                     [],
                     pd.DataFrame({'Named Entity':[]}),
                     *([' ']*5),
-                    [],
+                    [('\n', None)],
                     ' ',
                 )
             clear_button.click(
@@ -215,19 +243,37 @@ def main_front_end():
                             # formatted.append(['\n', None])
                             p_start = passage.index(mrc_answer)
                             p_end = p_start+len(mrc_answer)
+                            return [
+                                (passage[:p_start], None), 
+                                (passage[p_start:p_end], 'Answer'),
+                                (passage[p_end:], None),
+                            ]
                             formatted.extend(map(list, zip(passage, [None]*len(passage))))
                             for q in range(p_start, p_end):
                                 formatted[q][1] = 'Answer'
                             return formatted
+                    return [(mrc_answer, 'Answer is not in the passages')]
                     print('No answer')
                     formatted.extend(map(list, zip(mrc_answer, ["Answer"] * len(mrc_answer))))
                     return formatted
-                        
+                # mrc_textbox = gr.HighlightedText(
+                #         label='',
+                #         combine_adjacent=True,
+                #         # container=False,
+                #         # show_legend=True,
+                #         # show_label=False,
+                #         color_map={'Answer': 'green'},
+                #         scale=5,
+                #         # visible=False,
+                # )
+                # mrc_textbox.value = format_mrc_answer()
+                
                 # chat_history.append([message, system_answer])
                 chat_history.append([message, mrc_answer])
                 
                 entities = pd.DataFrame({'Named Entity':entities})
                 passages = (passages+['无相关信息']*5)[:5]
+            
                 return (
                     '',
                     chat_history,
