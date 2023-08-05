@@ -231,16 +231,14 @@ def main_front_end():
                 passages = ServerAPI.retrieve_passages(query)
                 mrc_answer = ServerAPI.mrc_extraction(query, passages)
                 abstract = ServerAPI.QA_abstract(chat_history)
-                system_answer = ServerAPI.answer_generate(query, mrc_answer, abstract)
+                # system_answer = ServerAPI.answer_generate(query, mrc_answer, abstract)
+                system_answer = mrc_answer
 
                 def format_mrc_answer():
                     if mrc_answer is None:
                         return []
-                    formatted = []
                     for p, passage in enumerate(passages):
                         if mrc_answer in passage:
-                            # formatted.append([f'相关信息{p+1}', 'y'])
-                            # formatted.append(['\n', None])
                             p_start = passage.index(mrc_answer)
                             p_end = p_start+len(mrc_answer)
                             return [
@@ -248,28 +246,9 @@ def main_front_end():
                                 (passage[p_start:p_end], 'Answer'),
                                 (passage[p_end:], None),
                             ]
-                            formatted.extend(map(list, zip(passage, [None]*len(passage))))
-                            for q in range(p_start, p_end):
-                                formatted[q][1] = 'Answer'
-                            return formatted
                     return [(mrc_answer, 'Answer is not in the passages')]
-                    print('No answer')
-                    formatted.extend(map(list, zip(mrc_answer, ["Answer"] * len(mrc_answer))))
-                    return formatted
-                # mrc_textbox = gr.HighlightedText(
-                #         label='',
-                #         combine_adjacent=True,
-                #         # container=False,
-                #         # show_legend=True,
-                #         # show_label=False,
-                #         color_map={'Answer': 'green'},
-                #         scale=5,
-                #         # visible=False,
-                # )
-                # mrc_textbox.value = format_mrc_answer()
                 
-                # chat_history.append([message, system_answer])
-                chat_history.append([message, mrc_answer])
+                chat_history.append([message, system_answer])
                 
                 entities = pd.DataFrame({'Named Entity':entities})
                 passages = (passages+['无相关信息']*5)[:5]
