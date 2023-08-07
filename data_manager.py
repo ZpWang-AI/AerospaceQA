@@ -12,8 +12,8 @@ from settings import (BAIKE_ALL_INFO_FILE_JSONL,
                       ZHIDAO_ALL_INFO_FILE_JSONL,
                       ZHIDAO_CRAWLED_KEYWORD_FILE_JSON,
                       KEYWORD_FOLD,
-                      KEYWORD_QUERY_FILE_JSON,
-                      KEYWORD_FILTER_FILE_JSON,
+                      KEYWORD_QUERY_FILE_JSONL,
+                      KEYWORD_FILTER_FILE_JSONL,
                       
                       BAIKE_ERROR_FILE_TXT,
                       ZHIDAO_ERROR_FILE_TXT,
@@ -188,7 +188,7 @@ keyword
     # ============================ keyword query
     @_decorator_custom
     def keyword_query_u_done():
-        return load_data(KEYWORD_QUERY_FILE_JSON, {}).keys()
+        return load_data(KEYWORD_QUERY_FILE_JSONL, {}, merge_jsonl=True).keys()
     
     @_decorator_custom
     def keyword_query_u_todo():
@@ -199,21 +199,21 @@ keyword
                
     @_decorator_custom
     def keyword_query_k_found():
-        return sum(load_data(KEYWORD_QUERY_FILE_JSON, {}).values(), [])
+        return sum(load_data(KEYWORD_QUERY_FILE_JSONL, {}, merge_jsonl=True).values(), [])
      
     # ============================ keyword filter
     @_decorator_custom
     def keyword_filter_k_done():
-        return load_data(KEYWORD_FILTER_FILE_JSON, {}).keys()
+        return load_data(KEYWORD_FILTER_FILE_JSONL, {}, merge_jsonl=True).keys()
 
     @_decorator_custom
     def keyword_filter_k_yes():
-        filter_record = load_data(KEYWORD_FILTER_FILE_JSON, {})
+        filter_record = load_data(KEYWORD_FILTER_FILE_JSONL, {}, merge_jsonl=True)
         return filter(lambda k:filter_record[k], filter_record)
     
     @_decorator_custom
     def keyword_filter_k_no():
-        filter_record = load_data(KEYWORD_FILTER_FILE_JSON, {})
+        filter_record = load_data(KEYWORD_FILTER_FILE_JSONL, {}, merge_jsonl=True)
         return filter(lambda k:not filter_record[k], filter_record)
         
     @_decorator_custom

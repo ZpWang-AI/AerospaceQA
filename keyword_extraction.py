@@ -16,18 +16,13 @@ from openai_api import get_response_chatcompletion
 from openai_apikey import api_key
 from data_manager import DataManager
 from settings import (KEYWORD_FOLD,
-                      KEYWORD_QUERY_FILE_JSON,
-                      KEYWORD_FILTER_FILE_JSON)
+                      KEYWORD_QUERY_FILE_JSONL,
+                      KEYWORD_FILTER_FILE_JSONL)
 
 openai.api_key = api_key
 
 sentence_sep = '。？！.?!．'
-# keyword_query_prompt = '''请从文章中抽取出所有的航空航天领域科学技术术语，以列表形式给出。
-# 输出格式：
-# - xxx
-# - xxx
-# 文章：
-# '''.strip()
+
 keyword_query_prompt = '''
 请从文章中抽取出所有的航空航天领域的科学技术术语，以列表形式给出。
 输出格式：
@@ -40,16 +35,7 @@ keyword_query_prompt = '''
 - 近地卫星导航系统
 文章：
 '''.strip()
-# keyword_filter_prompt = '''请判断下列词语是否与航天航空领域存在直接或潜在的关系。输出两行，以逗号分割。
-# 输出格式
-# 是: xxx,xxx,xxx
-# 否: xxx,xxx,xxx
-# '''.strip()
-# keyword_filter_prompt = '''请判断下列词语是否与航天航空领域存在直接关系。输出两行，以逗号分割。
-# 输出格式
-# 是: xxx,xxx,xxx
-# 否: xxx,xxx,xxx
-# '''.strip()
+
 keyword_filter_prompt = '''请判断下列词语是否属于航天航空领域。输出两行，以逗号分割。
 输出格式：
 是: xxx,xxx,xxx
@@ -116,7 +102,7 @@ class KeywordQueryer:
         yield cur_content
     
     def get_new_keywords(self, keys, contents):
-        record = load_data(KEYWORD_QUERY_FILE_JSON, default={})
+        record = load_data(KEYWORD_QUERY_FILE_JSONL, default={}, merge_jsonl=True)
     
         todo_lst = []
         for key, content in zip(keys, contents):
@@ -132,9 +118,12 @@ class KeywordQueryer:
                 cur_keywords = self._get_response(cliped_content)
                 new_keywords.extend(cur_keywords)
             
-            record[key] = new_keywords
+            # record[key] = new_keywords
             if self._save_keyword:
-                dump_data(KEYWORD_QUERY_FILE_JSON, record, 'w', indent=4)
+                # dump_data(KEYWORD_QUERY_FILE_JSON, record, 'w', indent=4)
+                
+                if new_keywords:
+                    dump_data(KEYWORD_QUERY_FILE_JSONL, {key:new_keywords})
 
 
 class KeywordFilter:
@@ -206,7 +195,7 @@ class KeywordFilter:
         yield cur_content
         
     def filter_keywords(self, todo_keywords, deduplicate=False):
-        record_filter = load_data(KEYWORD_FILTER_FILE_JSON, default={})
+        # record_filter = load_data(KEYWORD_FILTER_FILE_JSONL, default={}, merge_jsonl=True)
         if deduplicate:
             todo_keywords = sorted(set(todo_keywords))
 
@@ -215,9 +204,11 @@ class KeywordFilter:
             cur_keywords = todo_keywords[p:p+self._max_filter_cnt]
             for content in self._clip_content(cur_keywords):
                 filter_res = self._get_response(content)
-                record_filter.update(filter_res)
+                # record_filter.update(filter_res)
                 if self._save_keyword:
-                    dump_data(KEYWORD_FILTER_FILE_JSON, record_filter, 'w', indent=4)  
+                    # dump_data(KEYWORD_FILTER_FILE_JSON, record_filter, 'w', indent=4) 
+                    for k, v in filter_res.items():     
+                        dump_data(KEYWORD_FILTER_FILE_JSONL, {k:v})
 
 
 class KeywordManager:
@@ -249,12 +240,12 @@ class KeywordManager:
             
 
 def main_query_new_keywords():
-    queried_keywords = load_data(KEYWORD_QUERY_FILE_JSON, default={})
+    queried_keywords = load_data(KEYWORD_QUERY_FILE_JSONL, default={}, merge_jsonl=True)
     keyword_queryer = KeywordQueryer(prompt=keyword_query_prompt)
-    for k in list(queried_keywords.keys()):
-        if not queried_keywords[k]:
-            del queried_keywords[k]
-    dump_data(KEYWORD_QUERY_FILE_JSON, queried_keywords, mode='w', indent=4)
+    # for k in list(queried_keywords.keys()):
+    #     if not queried_keywords[k]:
+    #         del queried_keywords[k]
+    # dump_data(KEYWORD_QUERY_FILE_JSON, queried_keywords, mode='w', indent=4)
 
     baike_urls = []
     baike_passage = []

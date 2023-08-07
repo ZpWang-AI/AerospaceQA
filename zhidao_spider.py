@@ -165,7 +165,8 @@ class ZhidaoSpider:
         
         keyword_list = set(keyword_list)
         keyword_list = filter(
-            lambda x:x not in self._record or any(v is not True for v in self._record[x].values()),
+            lambda x:x not in self._record,
+            # lambda x:x not in self._record or any(v is not True for v in self._record[x].values()),
             keyword_list,
         )
         keyword_list = sorted(keyword_list)
