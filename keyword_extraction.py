@@ -226,13 +226,15 @@ class KeywordManager:
             
             keyword_yes = []
             for sym in ['是', '1', 1]:
-                df_keyword = pd.read_excel(file_excel)
+                df_keyword = pd.read_excel(file_excel, header=None)
                 df_keyword = df_keyword.loc[df_keyword.iloc[:, 1]==sym]
                 df_keyword = df_keyword.iloc[:, 0]
                 keyword_yes.extend(df_keyword.tolist())
             str_keyword = '\n'.join(map(str, keyword_yes))
             dump_data(file_txt, str_keyword, 'w')
-            print(f'keyword from {file_excel} to {file_txt}')
+            print(f'{pd.read_excel(file_excel, header=None).shape[0]} keyword\n'
+                  f'{len(keyword_yes)} yes\n'
+                  f'from {file_excel} to {file_txt}\n')
     
     @staticmethod
     def get_final_keywords():

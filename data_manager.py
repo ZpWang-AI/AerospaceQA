@@ -249,15 +249,19 @@ keyword
         return filter_k_yes-manual_k_done
     
     # ============================ key point
-    @_decorator_custom
-    def keypoint_total_message():
-        baike_u_found = DataManager.baike_u_found(True)
-        zhidao_u_found = DataManager.zhidao_u_found(True)
+    def keypoint_total_message(*args, **kwargs):
+        baike_u_found = DataManager.baike_u_found(*args, **kwargs)
+        zhidao_u_found = DataManager.zhidao_u_found(*args, **kwargs)
         return baike_u_found | zhidao_u_found
     
-    def keypoint_total_keywords(*args, **kwargs):
+    def keypoint_total_queried_keywords(*args, **kwargs):
+        filter_yes = DataManager.keyword_filter_k_yes(*args, **kwargs)
+        filter_no = DataManager.keyword_filter_k_no(*args, **kwargs)
+        return filter_yes | filter_no
+
+    def keypoint_total_manual_keywords(*args, **kwargs):
         return DataManager.keyword_manual_k_done(*args, **kwargs)
-    
+        
     # ============================ 
     @staticmethod
     def deduplicate_info(info_file):
@@ -318,8 +322,9 @@ keyword
             },
             '重点':{
                 '重点':{
-                    '文章数量':DataManager.keypoint_total_message,
-                    '人工审核关键词数量':DataManager.keypoint_total_keywords,
+                    '爬取文章总量':DataManager.keypoint_total_message,
+                    '抽取术语总量':DataManager.keypoint_total_queried_keywords,
+                    '人工审核关键词数量':DataManager.keypoint_total_manual_keywords,
                 }
             }
         }
@@ -367,3 +372,9 @@ if __name__ == '__main__':
     # DataManager.deduplicate_info(BAIKE_ALL_INFO_FILE_JSONL)
     # DataManager.deduplicate_info(ZHIDAO_ALL_INFO_FILE_JSONL)
     DataManager.analyse_progress()
+    
+    # queried = DataManager.keyword_query_k_found(True)
+    # filtered = DataManager.keyword_filter_k_done(True)
+    # print(len(queried-filtered))
+    # print(len(filtered-queried))
+    # print(filtered-queried)

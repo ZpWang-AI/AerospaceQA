@@ -13,19 +13,21 @@ import warnings
 from tqdm import tqdm
 from lxml import etree
 from collections import OrderedDict
-from baiduspider import BaiduSpider
+# from baiduspider import BaiduSpider
 from fake_useragent import UserAgent
 
 from utils import sleep_random_time, get_cur_time, exception_handling
 from proxy_utils import get_proxy
 from data_utils import load_data, dump_data
 from keyword_extraction import KeywordManager
+from zhidao_search import ZhidaoSearcher
 from zhidao_norm import Normalizer
 from settings import (ZHIDAO_ALL_INFO_FILE_JSONL,
                       ZHIDAO_CRAWLED_KEYWORD_FILE_JSON,
                       ZHIDAO_LOG_FILE_TXT,
                       ZHIDAO_ERROR_FILE_TXT,
                       PROXY_URL,
+                      HEADERS,
                       )
 
 # headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
@@ -57,12 +59,12 @@ class ZhidaoSpider:
         self._save_res = save_res
         self._decode_mode = decode_mode  # 'gb2312', 'utf-8'
 
-        self._spider = BaiduSpider()
+        self._searcher = ZhidaoSearcher(headers=HEADERS)
         self._normalizer = Normalizer()
         self._user_agent = UserAgent()
         
         self._record = load_data(ZHIDAO_CRAWLED_KEYWORD_FILE_JSON, default={})
-        
+    
     def _log(self, keyword, url, info):
         if keyword not in self._record:
             self._record[keyword] = {}
@@ -91,7 +93,8 @@ class ZhidaoSpider:
         
         for page in range(1, self._page_size+1):
             res_lst = exception_handling(
-                target_func=lambda:self._spider.search_zhidao(keyword+' 百度知道', pn=page).plain,
+                # target_func=lambda:self._spider.search_zhidao(keyword+' 百度知道', pn=page).plain,
+                target_func=lambda:self._searcher.search_zhidao(keyword=keyword+' 百度知道', pn=page),
                 display_message=keyword,
                 error_file=ZHIDAO_ERROR_FILE_TXT,
                 error_return=(),
