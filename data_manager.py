@@ -181,8 +181,10 @@ keyword
                 lambda u: crawled_record[k][u] is True,
                 crawled_record[k],
             ))
-        u_found = [[u+'@@1', u+'@@2'] for u in u_found]
-        return sum(u_found, [])
+        u_found_ = []
+        for u in u_found:
+            u_found_.extend([u+'@@1', u+'@@2'])
+        return u_found_
      
      
     # ============================ keyword query
@@ -199,7 +201,11 @@ keyword
                
     @_decorator_custom
     def keyword_query_k_found():
-        return sum(load_data(KEYWORD_QUERY_FILE_JSONL, {}, merge_jsonl=True).values(), [])
+        k_values = load_data(KEYWORD_QUERY_FILE_JSONL, {}, merge_jsonl=True).values()
+        k_found = []
+        for v in k_values:
+            k_found.extend(v)
+        return k_found
      
     # ============================ keyword filter
     @_decorator_custom
