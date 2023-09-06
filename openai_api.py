@@ -5,7 +5,7 @@ import threading
 import copy
 import requests
 
-from openai.error import RateLimitError, APIError, APIConnectionError, Timeout
+from openai.error import RateLimitError, APIError, APIConnectionError, Timeout, AuthenticationError
 
 from openai_apikey import api_key
 from utils import exception_handling
@@ -87,7 +87,7 @@ def get_response_chatcompletion(
     def exception_handle_func(err):
         if type(err) == RateLimitError:
             if 'please check your plan and billing details' in str(err):
-                raise 'No more money !!!'
+                raise Exception('No more money !!!')
             return True
         if type(err) == APIConnectionError and 'Max retries exceeded with url' in str(err):
             return 5
@@ -96,6 +96,12 @@ def get_response_chatcompletion(
         if type(err) == APIError and 'HTTP code 502' in str(err):
             return True
         if type(err) == Timeout and 'Max retries exceeded with url' in str(err):
+            return True
+        if type(err) == AuthenticationError:
+            if 'this API key has been deactivated' in str(err):
+                raise Exception('this API key has been deactivated')
+            if 'Incorrect API key provided' in str(err):
+                raise Exception('Incorrect API key provided')
             return True
 
     return exception_handling(

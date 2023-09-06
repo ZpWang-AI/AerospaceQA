@@ -230,7 +230,7 @@ class KeywordManager:
             
             for sheet_name in pd.ExcelFile(file_excel).sheet_names:
                 df_keyword = pd.read_excel(file_excel, header=None, sheet_name=sheet_name)
-                print(file_excel, sheet_name)
+                # print(file_excel, sheet_name)
                 keyword_tot += df_keyword.shape[0]
                 for sym in ['是', '1', 1]:
                     df_keyword__ = df_keyword.loc[df_keyword.iloc[:, 1]==sym]

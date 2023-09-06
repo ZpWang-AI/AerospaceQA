@@ -234,9 +234,10 @@ keyword
         for file in os.listdir(KEYWORD_FOLD):
             file = KEYWORD_FOLD/file
             if file.suffix in ['.xls', '.xlsx']:
-                df_keyword = pd.read_excel(file, header=None)
-                df_keyword = df_keyword.iloc[:, 0].tolist()
-                k_done.extend(df_keyword)
+                for sheet_name in pd.ExcelFile(file).sheet_names:
+                    df_keyword = pd.read_excel(file, header=None, sheet_name=sheet_name)
+                    df_keyword = df_keyword.iloc[:, 0].tolist()
+                    k_done.extend(df_keyword)
         return k_done
                
     @_decorator_custom
@@ -377,7 +378,14 @@ if __name__ == '__main__':
     
     # DataManager.deduplicate_info(BAIKE_ALL_INFO_FILE_JSONL)
     # DataManager.deduplicate_info(ZHIDAO_ALL_INFO_FILE_JSONL)
+
     DataManager.analyse_progress()
+    
+    # with open('total_keywords.txt', 'w', encoding='utf-8')as f:
+    #     keywords = DataManager.keypoint_total_manual_keywords(return_set=False)
+    #     for k in keywords:
+    #         f.write(f'{k}\n')
+        
     
     # queried = DataManager.keyword_query_k_found(True)
     # filtered = DataManager.keyword_filter_k_done(True)
