@@ -247,7 +247,7 @@ keyword
     @_decorator_custom
     def keyword_manual_k_no():
         return DataManager.keyword_manual_k_done(True) - \
-               DataManager.keyword_manual_k_yes(True)
+               DataManager.keyword_manual_k_yes(True) 
                
     @_decorator_custom
     def keyword_manual_k_todo():
