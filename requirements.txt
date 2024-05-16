@@ -8,4 +8,4 @@ pandas==1.5.1
 Requests==2.31.0
 selenium==4.9.1
 torch==1.13.1
-tqdm==4.64.1
+tqdm==4.66.3
